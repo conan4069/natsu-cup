@@ -12,10 +12,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+sys.path.insert(0, str(BASE_DIR / "apps"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -26,11 +27,7 @@ SECRET_KEY = 'django-insecure-2sx7&ikl9cn@ndk@b_ud9h&z)=lbsav#!i=ei#_!kxm25-v!-$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-  'apps.teams',
-  'apps.league'
-]
-
+ALLOWED_HOSTS = ['localhost']
 
 # Application definition
 CONFIG_APPS = [
@@ -44,7 +41,7 @@ CONFIG_APPS = [
   'corsheaders',
 ]
 
-NORMAL_APPS = []
+NORMAL_APPS = ['team', 'league']
 
 INSTALLED_APPS = CONFIG_APPS + NORMAL_APPS
 
