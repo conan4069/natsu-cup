@@ -27,8 +27,8 @@ SECRET_KEY = 'django-insecure-2sx7&ikl9cn@ndk@b_ud9h&z)=lbsav#!i=ei#_!kxm25-v!-$
 DEBUG = True
 
 ALLOWED_HOSTS = [
-  'teams',
-  'league'
+  'apps.teams',
+  'apps.league'
 ]
 
 
