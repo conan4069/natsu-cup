@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: natsu_cup
+      POSTGRES_USER: natsu
+      POSTGRES_PASSWORD: natsuPrecioso
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      - DB_NAME=natsu_cup
+      - DB_USER=natsu
+      - DB_PASSWORD=natsuPrecioso
+      - DB_HOST=db
+      - DB_PORT=5432
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    command: npm run dev
+    environment:
+      - HOST=0.0.0.0
+
+volumes:
+  postgres_data:
