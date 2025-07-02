@@ -41,7 +41,7 @@ CONFIG_APPS = [
   'corsheaders',
 ]
 
-NORMAL_APPS = ['team', 'league']
+NORMAL_APPS = ['league']
 
 INSTALLED_APPS = CONFIG_APPS + NORMAL_APPS
 
