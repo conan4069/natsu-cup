@@ -1,5 +1,5 @@
 <template>
-  <v-timeline side="start" align="start" dense>
+  <v-timeline align="start" dense side="start">
     <v-timeline-item
       v-for="(item, index) in steps"
       :key="index"
@@ -11,7 +11,9 @@
       </template>
 
       <v-card class="pa-3" elevation="2">
-        <v-card-title class="text-subtitle-1">{{ item.team_name }}</v-card-title>
+        <v-card-title class="text-subtitle-1">{{
+          item.team_name
+        }}</v-card-title>
         <v-card-subtitle v-if="item.group">
           Grupo {{ item.group }}
         </v-card-subtitle>
@@ -26,10 +28,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
-  steps: { type: Array, required: true }
+defineProps({
+  steps: { type: Array, required: true },
 })
 
 function getColor(type) {

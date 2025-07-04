@@ -20,14 +20,27 @@
         <v-card class="mb-4" outlined>
           <v-card-title class="text-h6">{{ item.team_name }}</v-card-title>
           <v-card-text>
-            <span v-if="item.type === 'group_winner'">Clasificado por 🏆 1º del grupo {{ item.group }}</span>
-            <span v-else-if="item.type === 'group_runner_up'">Clasificado por 🥈 2º del grupo {{ item.group }}</span>
+            <span v-if="item.type === 'group_winner'"
+              >Clasificado por 🏆 1º del grupo {{ item.group }}</span
+            >
+            <span v-else-if="item.type === 'group_runner_up'"
+              >Clasificado por 🥈 2º del grupo {{ item.group }}</span
+            >
             <span v-else-if="item.type === 'best_third'">
-              Tercero destacado {{ item.status === 'qualified' ? '✅ clasificado' : '⏳ esperando repechaje' }}
+              Tercero destacado
+              {{
+                item.status === 'qualified'
+                  ? '✅ clasificado'
+                  : '⏳ esperando repechaje'
+              }}
             </span>
           </v-card-text>
         </v-card>
-        <v-btn color="primary" @click="nextStep" :disabled="step >= steps.length">
+        <v-btn
+          color="primary"
+          :disabled="step >= steps.length"
+          @click="nextStep"
+        >
           Siguiente
         </v-btn>
       </v-stepper-content>
@@ -38,8 +51,8 @@
 <script setup>
 import { ref } from 'vue'
 
-const props = defineProps({
-  steps: { type: Array, required: true }
+defineProps({
+  steps: { type: Array, required: true },
 })
 
 const step = ref(1)

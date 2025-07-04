@@ -1,11 +1,11 @@
 <template>
-  <v-container fluid class="pa-0 bracket-container">
+  <v-container class="pa-0 bracket-container" fluid>
     <v-row no-gutters>
       <v-col
         v-for="(round, index) in rounds"
         :key="'round-' + index"
-        cols="auto"
         class="pr-4"
+        cols="auto"
       >
         <h4 class="text-center mb-2">Fase {{ formatRound(index) }}</h4>
         <v-card
@@ -29,8 +29,8 @@ import { computed } from 'vue'
 const props = defineProps({
   matches: {
     type: Array,
-    required: true
-  }
+    required: true,
+  },
 })
 
 // Agrupar por etapas (rondas) según el campo match.stage
@@ -69,4 +69,3 @@ function formatRound(index) {
   min-width: 160px;
 }
 </style>
-

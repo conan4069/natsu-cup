@@ -14,5 +14,17 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: true,
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@import "@/styles/settings.scss";`,
+      },
+    },
+  },
+  define: {
+    __VUE_OPTIONS_API__: true,
+    __VUE_PROD_DEVTOOLS__: false,
   },
 })

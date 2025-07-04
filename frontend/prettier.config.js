@@ -8,4 +8,12 @@ export default {
   bracketSpacing: true,
   arrowParens: 'avoid',
   endOfLine: 'lf',
+  overrides: [
+    {
+      files: '*.vue',
+      options: {
+        parser: 'vue',
+      },
+    },
+  ],
 }
