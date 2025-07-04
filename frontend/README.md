@@ -1,158 +1,228 @@
-# Frontend - Natsu Cup
+# Natsu Cup - Frontend
 
-## Configuración
+Frontend de la aplicación Natsu Cup desarrollado con Vue 3, Vuetify y Vite.
 
-Este proyecto utiliza Vue 3 con Vuetify 3 y axios para las comunicaciones con la API.
+## 🚀 Tecnologías
 
-### Dependencias principales
+- **Vue 3** - Framework de JavaScript progresivo
+- **Vuetify 3** - Framework de componentes Material Design
+- **Vite** - Herramienta de construcción rápida
+- **Vue Router** - Enrutador oficial de Vue
+- **Pinia** - Store de estado para Vue
+- **SCSS** - Preprocesador de CSS
+- **ESLint + Prettier** - Linting y formateo de código
 
-- **Vue 3**: Framework de JavaScript progresivo
-- **Vuetify 3**: Framework de componentes de Material Design
-- **Axios**: Cliente HTTP para realizar peticiones a la API
-- **Vue Router**: Enrutador oficial para Vue.js
-- **Pinia**: Store de estado para Vue
+## 📁 Estructura del Proyecto
 
-### Configuración de Vuetify
+```
+frontend/
+├── public/                 # Archivos estáticos
+├── src/
+│   ├── assets/            # Recursos estáticos (imágenes, iconos)
+│   │   └── ...
+│   ├── components/        # Componentes reutilizables
+│   │   ├── btnConfirm/    # Componente de botón de confirmación
+│   │   ├── bracketView/   # Componentes para visualización de brackets
+│   │   ├── phaseStepper/  # Componente de pasos de fase
+│   │   ├── phaseTimeLine/ # Componente de línea de tiempo
+│   │   └── tableFase/     # Componente de tabla de fases
+│   ├── layouts/           # Layouts de la aplicación
+│   │   └── default.vue    # Layout principal
+│   ├── pages/             # Páginas de la aplicación (auto-importadas)
+│   ├── plugins/           # Plugins de Vue
+│   ├── router/            # Configuración de rutas
+│   ├── services/          # Servicios y APIs
+│   │   └── api.js         # Configuración base de axios
+│   ├── stores/            # Stores de Pinia
+│   ├── styles/            # Estilos globales
+│   │   └── settings.scss  # Variables y configuración de Vuetify
+│   ├── utils/             # Utilidades y helpers
+│   ├── App.vue            # Componente raíz
+│   └── main.js            # Punto de entrada
+├── .eslintrc-auto-import.json  # Configuración de auto-imports
+├── auto-imports.d.ts      # Tipos de auto-imports
+├── components.d.ts        # Tipos de componentes
+├── env.example            # Variables de entorno de ejemplo
+├── eslint.config.js       # Configuración de ESLint
+├── jsconfig.json          # Configuración de JavaScript
+├── package.json           # Dependencias del proyecto
+├── vite.config.mjs        # Configuración de Vite
+└── README.md              # Este archivo
+```
 
-Vuetify está configurado en `src/plugins/vuetify.js` con:
+## 🛠️ Configuración
 
-- Tema personalizado con colores Material Design
-- Iconos de Material Design Icons
-- Configuración de componentes por defecto
+### Prerrequisitos
 
-### Configuración de Vite
+- Node.js 18+ 
+- npm o yarn
 
-El archivo `vite.config.js` incluye:
+### Instalación
 
-- Configuración de alias para imports (`@` apunta a `src/`)
-- Soporte para SCSS con importación automática de variables
-- Configuración de servidor de desarrollo
-- Optimizaciones para producción
+1. **Clonar el repositorio**
+   ```bash
+   git clone <url-del-repositorio>
+   cd natsu-cup/frontend
+   ```
 
-### Estilos SCSS
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
 
-El archivo `src/styles/settings.scss` contiene:
+3. **Configurar variables de entorno**
+   ```bash
+   cp env.example .env
+   ```
+   Edita el archivo `.env` con tus configuraciones:
+   ```env
+   VITE_API_URL=http://localhost:8000/api
+   VITE_APP_TITLE=Natsu Cup
+   VITE_APP_VERSION=1.0.0
+   ```
 
-- Variables de color, espaciado y tipografía
-- Mixins útiles para flexbox y responsive design
-- Clases de utilidad para márgenes y padding
-- Configuración global de componentes Vuetify
+4. **Ejecutar en desarrollo**
+   ```bash
+   npm run dev
+   ```
 
-### Configuración de API
-
-La configuración de API está separada en dos archivos:
-
-- `src/utils/axios.js`: Configuración base de axios con interceptores
-- `src/services/api.js`: Funciones específicas para endpoints de Django REST Framework
-
-Características:
-- Instancia de axios configurada con interceptores
-- Manejo automático de tokens de autenticación
-- Funciones específicas para todos los endpoints de Django
-- Manejo de errores centralizado
-- Rutas que coinciden exactamente con `apps/league/urls.py`
-
-### Variables de entorno
-
-Crear un archivo `.env` en la raíz del frontend basado en `env.example`:
+## 🔧 Scripts Disponibles
 
 ```bash
-# Copiar el archivo de ejemplo
-cp env.example .env
+# Desarrollo
+npm run dev              # Servidor de desarrollo en http://localhost:3000
+
+# Construcción
+npm run build            # Construir para producción
+npm run preview          # Previsualizar build de producción
+
+# Linting y formateo
+npm run lint             # Ejecutar ESLint
+npm run lint:fix         # Corregir errores de ESLint automáticamente
+npm run format           # Formatear código con Prettier
+
+# Análisis
+npm run analyze          # Analizar bundle de producción
 ```
 
-Variables disponibles:
-- `VITE_API_URL`: URL base de la API de Django (por defecto: http://localhost:8000/api)
-- `VITE_DEV_MODE`: Modo de desarrollo
-- `VITE_AUTH_ENABLED`: Habilitar autenticación
-- `VITE_AUTH_TOKEN_KEY`: Clave para el token de autenticación
+## 🎨 Sistema de Diseño
 
-### Uso de la API
+### Fuentes
+- **Roboto**: Fuente principal (pesos: 100, 300, 400, 500, 700, 900)
+- Configurado con `unplugin-fonts/vite` para optimización automática
 
-```javascript
-import { tournamentAPI, matchAPI, playerAPI, gameTeamAPI, handleApiError } from '@/services/api'
+### Estilos
+- **SCSS** como preprocesador
+- Variables globales en `src/styles/settings.scss`
+- Integración completa con Vuetify
 
-// Ejemplo de uso con torneos
-try {
-  const response = await tournamentAPI.getTournaments()
-  console.log(response.data)
-} catch (error) {
-  const errorInfo = handleApiError(error)
-  console.error(errorInfo.message)
-}
+## 🔌 Plugins Configurados
 
-// Ejemplo de uso con partidos
-const match = await matchAPI.getMatch(1)
+### Auto-Imports
+- **Vue Router**: Rutas y navegación
+- **Pinia**: Stores y estado
+- **Vue**: Composables y utilidades
 
-// Ejemplo de uso con jugadores
-const players = await playerAPI.getPlayers()
+### Componentes
+- **Vuetify**: Componentes Material Design
+- **Auto-importación**: Componentes de `src/components/` y `src/pages/`
 
-// Ejemplo de uso con equipos del juego
-const teams = await gameTeamAPI.getGameTeams()
-```
+### Layouts
+- **vite-plugin-vue-layouts**: Sistema de layouts automático
+- Layouts en `src/layouts/`
 
-### Comandos disponibles
+## 🌐 API y Servicios
 
+### Configuración Base
+- **Axios** configurado en `src/services/api.js`
+- Interceptores para manejo de errores
+- Configuración base desde variables de entorno
+
+### Rutas API
+Las rutas están sincronizadas con el backend Django:
+- `/api/tournaments/` - Gestión de torneos
+- `/api/teams/` - Gestión de equipos
+- `/api/matches/` - Gestión de partidas
+- `/api/brackets/` - Gestión de brackets
+
+## 📱 Componentes Principales
+
+### Brackets
+- `BracketView.vue` - Visualización principal de brackets
+- `KnockoutBracket.vue` - Brackets de eliminación
+
+### Fases
+- `phaseStepper.vue` - Navegación por pasos
+- `phaseTimeLine.vue` - Línea de tiempo de fases
+- `tableFase.vue` - Tabla de fases
+
+### Utilidades
+- `btnConfirm.vue` - Botón de confirmación reutilizable
+
+## 🚀 Despliegue
+
+### Docker
 ```bash
-# Instalar dependencias
-npm install
+# Construir imagen
+docker build -t natsu-cup-frontend .
 
-# Servidor de desarrollo
-npm run dev
+# Ejecutar contenedor
+docker run -p 3000:3000 natsu-cup-frontend
+```
 
-# Construir para producción
+### Producción
+```bash
+# Construir
 npm run build
 
-# Vista previa de producción
-npm run preview
+# Los archivos se generan en dist/
 ```
 
-### Estructura de archivos
+## 🔍 Desarrollo
 
-```
-src/
-├── plugins/
-│   └── vuetify.js          # Configuración de Vuetify
-├── utils/
-│   └── axios.js           # Configuración base de axios
-├── services/
-│   └── api.js             # Funciones específicas de API
-├── styles/
-│   └── settings.scss      # Variables y mixins SCSS
-├── components/            # Componentes Vue
-├── views/                 # Vistas de la aplicación
-├── router/                # Configuración de rutas
-└── stores/                # Stores de Pinia
-```
+### Estructura de Componentes
+Cada componente debe seguir esta estructura:
+```vue
+<template>
+  <!-- Template aquí -->
+</template>
 
-## Recommended IDE Setup
+<script setup>
+// Lógica del componente
+</script>
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
+<style scoped>
+/* Estilos específicos del componente */
+</style>
 ```
 
-### Compile and Hot-Reload for Development
+### Convenciones de Nomenclatura
+- **Componentes**: PascalCase (`MyComponent.vue`)
+- **Archivos**: kebab-case (`my-file.js`)
+- **Variables**: camelCase (`myVariable`)
+- **Constantes**: UPPER_SNAKE_CASE (`MY_CONSTANT`)
 
-```sh
-npm run dev
-```
+### Rutas
+- Las rutas se crean automáticamente desde `src/pages/`
+- Usar `definePageMeta()` para metadatos de página
+- Layouts se asignan automáticamente
 
-### Compile and Minify for Production
+## 📚 Documentación Adicional
 
-```sh
-npm run build
-```
+- [📁 Estructura del Proyecto](./STRUCTURE.md) - Guía visual de la estructura de carpetas
+- [📦 Dependencias](./DEPENDENCIES.md) - Estado y configuración de dependencias
+- [🎨 Sistema de Fuentes](./FONTS.md) - Configuración y uso de fuentes
+- [🔗 API Routes Validation](./API_ROUTES_VALIDATION.md) - Validación de rutas API
+- [🎨 Vuetify Documentation](https://vuetifyjs.com/) - Documentación oficial de Vuetify
+- [⚡ Vue 3 Documentation](https://vuejs.org/) - Documentación oficial de Vue
 
-### Lint with [ESLint](https://eslint.org/)
+## 🤝 Contribución
 
-```sh
-npm run lint
-```
+1. Crear una rama para tu feature
+2. Hacer commits descriptivos
+3. Ejecutar `npm run lint` antes de hacer push
+4. Crear un Pull Request
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia MIT.

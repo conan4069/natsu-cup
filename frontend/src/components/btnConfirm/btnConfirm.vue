@@ -11,7 +11,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { handleApiError, tournamentAPI } from '@/services/api'
+import { handleApiError, tournamentAPI } from '../../../../natsu-cup/src/services/api'
 
 // Props
 const props = defineProps({

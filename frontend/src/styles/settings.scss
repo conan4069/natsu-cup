@@ -5,10 +5,6 @@
  */
 
 // https://vuetifyjs.com/features/sass-variables/`
-@use 'vuetify/settings' with (
-  $body-font-family: (
-    'Roboto',
-    sans-serif,
-  ),
-  $button-height: 48px
-);
+// @use 'vuetify/settings' with (
+//   $color-pack: false
+// );
