@@ -13,6 +13,7 @@ declare module 'vue' {
     BtnConfirm: typeof import('./src/components/btnConfirm/btnConfirm.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     KnockoutBracket: typeof import('./src/components/bracketView/KnockoutBracket.vue')['default']
+    NToolbar: typeof import('./src/components/nToolbar/nToolbar.vue')['default']
     PhaseStepper: typeof import('./src/components/phaseStepper/phaseStepper.vue')['default']
     PhaseTimeLine: typeof import('./src/components/phaseTimeLine/phaseTimeLine.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

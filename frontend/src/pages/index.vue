@@ -1,32 +1,32 @@
 <template>
   <v-container fluid class="pa-0">
-    <!-- Hero Section -->
-    <v-row no-gutters class="hero-section">
+  <!-- Hero Section -->
+  <v-parallax src="https://cdn.vuetifyjs.com/images/parallax/material.jpg">
+    <v-row no-gutters>
       <v-col cols="12" class="d-flex align-center justify-center">
-        <div class="text-center hero-content">
-          <v-icon size="120" color="primary" class="mb-6">sports_soccer</v-icon>
-          <h1 class="text-h2 font-weight-bold text-white mb-4">
+        <div class="text-center" style="transform: translateX(-4%);">
+          <h1 class="text-h1 font-weight-bold text-white ml-10" style="padding-top: 100px;">
             Natsu Cup
           </h1>
-          <p class="text-h5 text-white mb-8">
-            El campeonato de FIFA más épico entre amigos
-          </p>
+          <v-icon size="120" color="primary" class="mb-16" style="padding-bottom: 700px;">sports_soccer</v-icon>
           <v-btn
+            prepend-icon="mdi-account" stacked
             size="x-large"
             color="primary"
             variant="elevated"
-            class="px-8"
+            class="px-5 mt-4 mr-16"
+            rounded="xl"
             @click="navigateToTournaments"
-          >
-            <v-icon start>emoji_events</v-icon>
-            Ver Torneos
+          > 
+          <h4>Registrarse</h4>
           </v-btn>
         </div>
       </v-col>
     </v-row>
+  </v-parallax>
 
     <!-- Features Section -->
-    <v-row class="py-16 px-4">
+    <v-row class="py-16 px-12">
       <v-col cols="12" class="text-center mb-12">
         <h2 class="text-h3 font-weight-bold mb-4">
           ¿Por qué Natsu Cup?

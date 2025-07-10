@@ -8,46 +8,7 @@
 
     <v-spacer />
 
-    <!-- Navegación principal -->
-    <v-btn
-      :active="isActiveRoute('/')"
-      class="mx-1"
-      text
-      to="/"
-    >
-      <v-icon left>mdi-home</v-icon>
-      Inicio
-    </v-btn>
-
-    <v-btn
-      :active="isActiveRoute('/tournaments')"
-      class="mx-1"
-      text
-      to="/tournaments"
-    >
-      <v-icon left>mdi-trophy-outline</v-icon>
-      Torneos
-    </v-btn>
-
-    <v-btn
-      :active="isActiveRoute('/brackets')"
-      class="mx-1"
-      text
-      to="/brackets"
-    >
-      <v-icon left>mdi-bracket-multiple</v-icon>
-      Brackets
-    </v-btn>
-
-    <v-btn
-      :active="isActiveRoute('/about')"
-      class="mx-1"
-      text
-      to="/about"
-    >
-      <v-icon left>mdi-information</v-icon>
-      Sobre
-    </v-btn>
+    <n-toolbar />
 
     <!-- Menú de usuario (opcional) -->
     <v-menu offset-y>
@@ -94,31 +55,22 @@
       <!-- Slot para el contenido de las rutas -->
       <router-view />
     </v-container>
+    <!-- Footer (opcional) -->
+    <v-footer class="py-3" color="grey-lighten-3">
+      <v-container>
+        <v-row align="center" justify="center">
+          <v-col class="text-center" cols="12">
+            <span class="text-caption text-grey-darken-1">
+              © 2025 Natsu Cup. Todos los derechos reservados.
+            </span>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-footer>
   </v-main>
-  <!-- Footer (opcional) -->
-  <v-footer app class="py-3" color="grey-lighten-3">
-    <v-container>
-      <v-row align="center" justify="center">
-        <v-col class="text-center" cols="12">
-          <span class="text-caption text-grey-darken-1">
-            © 2025 Natsu Cup. Todos los derechos reservados.
-          </span>
-        </v-col>
-      </v-row>
-    </v-container>
-  </v-footer>
 </template>
 
 <script setup>
-  import { useRoute } from 'vue-router'
-
-  const route = useRoute()
-
-  // Computed para verificar si una ruta está activa
-  const isActiveRoute = path => {
-    return route.path === path
-  }
-
   // Métodos para el menú de usuario
   const handleProfile = () => {
     console.log('Ir al perfil')
