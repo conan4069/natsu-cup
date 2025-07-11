@@ -13,7 +13,7 @@
           <div>
             <h1 class="text-h4 font-weight-bold mb-2">Nuevo Jugador</h1>
             <p class="text-body-1 text-grey-darken-1">
-              Agrega un nuevo jugador al campeonato Natsu Cup
+              Agrega un nuevo jugador al formato de la Natsu Cup
             </p>
           </div>
         </div>

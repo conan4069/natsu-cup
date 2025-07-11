@@ -4,7 +4,7 @@
     <v-text-field
       v-model="form.display_name"
       label="Nombre del jugador"
-      placeholder="Ej: Lionel Messi"
+      placeholder="Ej: Eliezer Hijo Mio"
       variant="outlined"
       :rules="nameRules"
       required
@@ -14,57 +14,43 @@
     />
 
     <!-- Avatar actual (solo en modo edición) -->
-    <div v-if="mode === 'edit' && player?.avatar" class="mb-4">
+  
+    <!-- Subida de avatar -->
+    <div
+      v-if="!readonly && mode !== 'view'"
+      class="mb-6 dropzone"
+      @dragover.prevent
+      @drop.prevent="onDrop"
+      @click="triggerFileInput"
+    >
+      <div class="dropzone-content">
+        <v-icon size="40" color="grey">mdi-cloud-upload</v-icon>
+        <span>Arrastra y suelta la imagen aquí</span>
+        <input
+          type="file"
+          accept="image/*"
+          style="display: none"
+          @change="onFileChange"
+          ref="fileInput"
+        />
+      </div>
+    </div>
+
+    <div v-if="avatarPreview" class="mb-4" style="display: flex; flex-direction: column; align-items: center;">
+      <p class="text-body-2 text-grey-darken-1 mb-2" style="text-align: center;">Avatar actual</p>
+      <v-avatar size="80">
+        <v-img :src="avatarPreview" alt="Preview del avatar" />
+      </v-avatar>
+    </div>
+
+    <div v-if="mode === 'edit' && player?.avatar" class="mb-4 avatar-centrado">
       <p class="text-body-2 text-grey-darken-1 mb-2">Avatar actual:</p>
       <v-avatar class="mb-3" size="80">
         <v-img alt="Avatar actual" :src="player.avatar" />
       </v-avatar>
     </div>
-
-    <!-- Subida de avatar -->
-    <v-file-input
-      v-if="!readonly && mode !== 'view'"
-      v-model="form.avatar"
-      :label="mode === 'edit' ? 'Cambiar avatar (opcional)' : 'Avatar (opcional)'"
-      accept="image/*"
-      variant="outlined"
-      prepend-inner-icon="mdi-image"
-      class="mb-6"
-      :rules="avatarRules"
-      show-size
-      counter
-    >
-      <template #prepend>
-        <v-avatar v-if="avatarPreview" class="mr-3" size="40">
-          <v-img alt="Preview del avatar" :src="avatarPreview" />
-        </v-avatar>
-      </template>
-    </v-file-input>
-
+    
     <!-- Información adicional -->
-    <v-expansion-panels class="mb-6" variant="accordion">
-      <v-expansion-panel>
-        <v-expansion-panel-title>
-          <v-icon start>mdi-information</v-icon>
-          Información adicional
-        </v-expansion-panel-title>
-        <v-expansion-panel-text>
-          <p class="text-body-2 text-grey-darken-1 mb-4">
-            Esta información será visible en el perfil del jugador y en los torneos.
-          </p>
-
-          <v-text-field
-            v-model="form.nickname"
-            class="mb-4"
-            label="Apodo (opcional)"
-            placeholder="Ej: La Pulga"
-            prepend-inner-icon="mdi-tag"
-            variant="outlined"
-            :readonly="readonly || mode === 'view'"
-          />
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels>
   </v-form>
 </template>
 
@@ -95,6 +81,7 @@ const emit = defineEmits(['update:form', 'submit', 'valid-change'])
 const formRef = ref(null)
 const valid = ref(false)
 const avatarPreview = ref(null)
+const fileInput = ref(null)
 
 // Formulario reactivo
 const form = ref({
@@ -181,6 +168,34 @@ const getFormData = () => {
   return formData
 }
 
+const triggerFileInput = () => {
+  fileInput.value && fileInput.value.click()
+}
+
+const onFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    form.value.avatar = file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      avatarPreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const onDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (file) {
+    form.value.avatar = file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      avatarPreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
 // Exponer métodos
 defineExpose({
   validate,
@@ -193,4 +208,28 @@ defineExpose({
 
 <style scoped>
 /* Estilos específicos si son necesarios */
+.dropzone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: border-color 0.2s;
+}
+.dropzone:hover {
+  border-color: #1976d2;
+}
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-centrado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
 </style>

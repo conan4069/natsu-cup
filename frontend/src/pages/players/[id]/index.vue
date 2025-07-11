@@ -39,7 +39,7 @@
               <div>
                 <h1 class="text-h4 font-weight-bold mb-2">{{ player.display_name }}</h1>
                 <p class="text-body-1 text-grey-darken-1">
-                  Jugador del campeonato Natsu Cup
+                  Jugador
                 </p>
               </div>
             </div>
@@ -65,21 +65,12 @@
                   <v-list-item-title>Nombre</v-list-item-title>
                   <v-list-item-subtitle>{{ player.display_name }}</v-list-item-subtitle>
                 </v-list-item>
-
-                <v-list-item>
-                  <template #prepend>
-                    <v-icon color="primary">mdi-identifier</v-icon>
-                  </template>
-                  <v-list-item-title>ID</v-list-item-title>
-                  <v-list-item-subtitle>{{ player.id }}</v-list-item-subtitle>
-                </v-list-item>
-
                 <v-list-item v-if="player.avatar">
                   <template #prepend>
                     <v-icon color="primary">mdi-image</v-icon>
                   </template>
-                  <v-list-item-title>Avatar</v-list-item-title>
-                  <v-list-item-subtitle>Imagen personalizada</v-list-item-subtitle>
+                  <v-list-item-title>Imagen</v-list-item-title>
+                  <v-list-item-subtitle>Retrato del jugador</v-list-item-subtitle>
                 </v-list-item>
               </v-list>
             </v-card-text>

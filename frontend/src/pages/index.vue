@@ -1,14 +1,14 @@
 <template>
   <v-container fluid class="pa-0">
   <!-- Hero Section -->
-  <v-parallax src="https://cdn.vuetifyjs.com/images/parallax/material.jpg">
+  <v-parallax src="@/assets/fondocesped.jpg">
     <v-row no-gutters>
       <v-col cols="12" class="d-flex align-center justify-center">
         <div class="text-center" style="transform: translateX(-4%);">
           <h1 class="text-h1 font-weight-bold text-white ml-10" style="padding-top: 100px;">
             Natsu Cup
           </h1>
-          <v-icon size="120" color="primary" class="mb-16" style="padding-bottom: 700px;">sports_soccer</v-icon>
+          <v-icon size="120" color="primary" class="mb-16" style="padding-bottom: 700px;"></v-icon>
           <v-btn
             prepend-icon="mdi-account" stacked
             size="x-large"

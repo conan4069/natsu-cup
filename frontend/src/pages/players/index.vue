@@ -13,7 +13,8 @@
           <v-btn
             color="primary"
             prepend-icon="mdi-plus"
-            size="large"
+            size="x-large"
+            rounded="xl"
             @click="navigateToCreate"
           >
             Nuevo Jugador
@@ -24,7 +25,7 @@
 
     <!-- Filtros y búsqueda -->
     <v-row class="mb-4">
-      <v-col cols="12" md="6">
+      <v-col cols="12" md="6" style="transform: translateX(50%);">
         <v-text-field
           v-model="searchQuery"
           density="comfortable"
@@ -32,6 +33,7 @@
           placeholder="Buscar jugadores..."
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
+          rounded="xl"
           @input="filterPlayers"
         />
       </v-col>
@@ -58,7 +60,7 @@
       >
         <!-- Avatar del jugador -->
         <template #item.avatar="{ item }">
-          <v-avatar class="mr-3" size="40">
+          <v-avatar class="mr-3" size="48">
             <v-img
               v-if="item.avatar"
               alt="Avatar del jugador"
@@ -73,32 +75,19 @@
         <!-- Nombre del jugador -->
         <template #item.display_name="{ item }">
           <div class="d-flex align-center">
-            <v-avatar class="mr-3" size="40">
-              <v-img
-                v-if="item.avatar"
-                alt="Avatar del jugador"
-                :src="item.avatar"
-              />
-              <v-icon v-else color="grey" size="24">
-                mdi-account
-              </v-icon>
-            </v-avatar>
             <div>
-              <div class="font-weight-medium">{{ item.display_name }}</div>
-              <div class="text-caption text-grey-darken-1">
-                ID: {{ item.id }}
-              </div>
+              <div class="font-weight-medium text-h6">{{ item.display_name }}</div>
             </div>
           </div>
         </template>
 
         <!-- Acciones -->
         <template #item.actions="{ item }">
-          <div class="d-flex gap-2">
+          <div class="d-flex" style="gap: 15px">
             <v-btn
               color="primary"
               icon="mdi-eye"
-              size="small"
+              size="medium"
               title="Ver detalles"
               variant="text"
               @click="viewPlayer(item)"
@@ -106,7 +95,7 @@
             <v-btn
               color="warning"
               icon="mdi-pencil"
-              size="small"
+              size="medium"
               title="Editar"
               variant="text"
               @click="editPlayer(item)"
@@ -197,9 +186,9 @@
 
   // Headers de la tabla
   const headers = [
-    { title: 'Jugador', key: 'display_name', sortable: true },
     { title: 'Avatar', key: 'avatar', sortable: false },
-    { title: 'Acciones', key: 'actions', sortable: false, align: 'end' },
+    { title: 'Jugador', key: 'display_name', sortable: true },
+    { title: 'Acciones', key: 'actions', sortable: false},
   ]
 
   // Computed para filtrar jugadores
