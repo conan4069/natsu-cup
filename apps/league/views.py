@@ -68,6 +68,137 @@ class PlayerListView(generics.ListAPIView):
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
 
+class PlayerCreateView(generics.CreateAPIView):
+    queryset = Player.objects.all()
+    serializer_class = PlayerSerializer
+
+class PlayerDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Player.objects.all()
+    serializer_class = PlayerSerializer
+
+class PlayerStatsView(views.APIView):
+    def get(self, request, player_id):
+        try:
+            player = Player.objects.get(pk=player_id)
+        except Player.DoesNotExist:
+            return Response({'error': 'Player not found'}, status=404)
+        
+        # Obtener todas las entradas del jugador
+        team_entries = TeamEntry.objects.filter(players=player)
+        
+        # Estadísticas básicas
+        total_tournaments = team_entries.count()
+        total_matches = 0
+        wins = 0
+        losses = 0
+        draws = 0
+        
+        # Calcular estadísticas de partidos
+        for entry in team_entries:
+            matches = Match.objects.filter(participants=entry, played=True)
+            total_matches += matches.count()
+            
+            for match in matches:
+                goals = match.goals
+                if goals:
+                    # Obtener goles del equipo del jugador
+                    entry_goals = goals.get(str(entry.id), 0)
+                    other_goals = sum(g for k, g in goals.items() if k != str(entry.id))
+                    
+                    if entry_goals > other_goals:
+                        wins += 1
+                    elif entry_goals < other_goals:
+                        losses += 1
+                    else:
+                        draws += 1
+        
+        # Calcular porcentajes
+        win_rate = (wins / total_matches * 100) if total_matches > 0 else 0
+        loss_rate = (losses / total_matches * 100) if total_matches > 0 else 0
+        draw_rate = (draws / total_matches * 100) if total_matches > 0 else 0
+        
+        stats = {
+            'player_id': player.id,
+            'player_name': player.display_name,
+            'total_tournaments': total_tournaments,
+            'total_matches': total_matches,
+            'wins': wins,
+            'losses': losses,
+            'draws': draws,
+            'win_rate': round(win_rate, 1),
+            'loss_rate': round(loss_rate, 1),
+            'draw_rate': round(draw_rate, 1),
+            'total_points': wins * 3 + draws,  # Sistema de puntos: 3 por victoria, 1 por empate
+        }
+        
+        return Response(stats)
+
+class PlayerTournamentsView(views.APIView):
+    def get(self, request, player_id):
+        try:
+            player = Player.objects.get(pk=player_id)
+        except Player.DoesNotExist:
+            return Response({'error': 'Player not found'}, status=404)
+        
+        # Obtener todas las entradas del jugador con información del torneo
+        team_entries = TeamEntry.objects.filter(players=player).select_related('tournament', 'assigned_team')
+        
+        tournaments = []
+        for entry in team_entries:
+            tournament = entry.tournament
+            
+            # Obtener estadísticas del jugador en este torneo
+            tournament_matches = Match.objects.filter(
+                participants=entry,
+                played=True
+            )
+            
+            tournament_wins = 0
+            tournament_losses = 0
+            tournament_draws = 0
+            
+            for match in tournament_matches:
+                goals = match.goals
+                if goals:
+                    entry_goals = goals.get(str(entry.id), 0)
+                    other_goals = sum(g for k, g in goals.items() if k != str(entry.id))
+                    
+                    if entry_goals > other_goals:
+                        tournament_wins += 1
+                    elif entry_goals < other_goals:
+                        tournament_losses += 1
+                    else:
+                        tournament_draws += 1
+            
+            # Calcular posición (simplificado)
+            total_matches = tournament_wins + tournament_losses + tournament_draws
+            points = tournament_wins * 3 + tournament_draws
+            
+            tournaments.append({
+                'id': tournament.id,
+                'name': tournament.name,
+                'format': tournament.format,
+                'entry_id': entry.id,
+                'assigned_team': entry.assigned_team.name if entry.assigned_team else None,
+                'matches_played': total_matches,
+                'wins': tournament_wins,
+                'losses': tournament_losses,
+                'draws': tournament_draws,
+                'points': points,
+                'win_rate': round((tournament_wins / total_matches * 100) if total_matches > 0 else 0, 1),
+                'status': 'completed' if total_matches > 0 else 'registered'
+            })
+        
+        # Ordenar por fecha de creación (más recientes primero)
+        tournaments.sort(key=lambda x: x['id'], reverse=True)
+        
+        return Response({
+            'player_id': player.id,
+            'player_name': player.display_name,
+            'tournaments': tournaments,
+            'total_tournaments': len(tournaments)
+        })
+
 # 🛡️ Equipos del juego
 class GameTeamListView(generics.ListAPIView):
     queryset = GameTeam.objects.all()
@@ -146,7 +277,7 @@ class CompleteKnockoutStageView(APIView):
     return Response({
       'message': f'Bracket for {next_stage} completed',
       'playoffs_created': [m.id for m in playoff_matches],
-      'matches_created': [m.id for m in knockout]
+      'matches_created': [m.id for m in knockout] if knockout else []
     }, status=201)
 
 class KnockoutPreviewView(APIView):

@@ -34,6 +34,8 @@ def generate_knockout_bracket(tournament, qualified_teams, stage='round_of_16'):
       else:
         parent.player_slot_2 = match
       parent.save()
+  
+  return matches
 
 def get_best_third_place_teams(tournament, needed=2):
   """

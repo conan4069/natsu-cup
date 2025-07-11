@@ -46,6 +46,24 @@ export const matchAPI = {
 export const playerAPI = {
   // Listar jugadores
   getPlayers: () => api.get('/players/'),
+
+  // Crear jugador
+  createPlayer: data => api.post('/players/create/', data),
+
+  // Obtener jugador específico
+  getPlayer: playerId => api.get(`/players/${playerId}/`),
+
+  // Actualizar jugador
+  updatePlayer: (playerId, data) => api.put(`/players/${playerId}/`, data),
+
+  // Eliminar jugador
+  deletePlayer: playerId => api.delete(`/players/${playerId}/`),
+
+  // Obtener estadísticas del jugador
+  getPlayerStats: playerId => api.get(`/players/${playerId}/stats/`),
+
+  // Obtener torneos del jugador
+  getPlayerTournaments: playerId => api.get(`/players/${playerId}/tournaments/`),
 }
 
 // Funciones de API para equipos del juego

@@ -32,3 +32,6 @@ coverage
 .env
 package-lock.json
 yarn.lock
+
+components.d.ts
+typed-router.d.ts
