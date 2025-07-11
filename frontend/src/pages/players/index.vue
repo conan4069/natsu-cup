@@ -126,6 +126,8 @@
             <v-btn
               color="primary"
               prepend-icon="mdi-plus"
+              size="large"
+              rounded="xl"
               @click="navigateToCreate"
             >
               Agregar Jugador
