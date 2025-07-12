@@ -9,7 +9,13 @@
         <!-- <v-icon class="mr-2">mdi-trophy</v-icon>
         Natsu Cup -->
         <v-avatar size="54">
-          <v-img :src="LogoCup" width="150" height="150" class="mr-2" style="border-radius: 50%;" />
+          <v-img
+            class="mr-2"
+            height="150"
+            :src="LogoCup"
+            style="border-radius: 50%;"
+            width="150"
+          />
         </v-avatar>
         <span class="text-h5 font-weight-bold">Natsu Cup</span>
       </v-app-bar-title>

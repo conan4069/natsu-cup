@@ -78,15 +78,6 @@
   const formValid = ref(false)
   const saving = ref(false)
 
-  // Estado reactivo
-  const form = ref({
-    display_name: '',
-    avatar: null,
-    nickname: ''
-  })
-  const loading = ref(false)
-  const error = ref(null)
-
   // Navegación
   const goBack = () => {
     router.push('/teams')
@@ -99,22 +90,18 @@
 
   // Crear equipo
   const createTeam = async () => {
-    loading.value = true
-    error.value = null
+    if (!teamFormRef.value) return
+
+    saving.value = true
     try {
-      const formData = new FormData()
-      formData.append('name', form.value.display_name)
-      if (form.value.avatar) {
-        formData.append('logo', form.value.avatar)
-      }
+      const formData = teamFormRef.value.getFormData()
       await teamAPI.createTeam(formData)
       router.push('/teams')
-    } catch (error_) {
-      const errorInfo = handleApiError(error_)
-      error.value = errorInfo.message
+    } catch (error) {
+      const errorInfo = handleApiError(error)
       console.error('Error al crear equipo:', errorInfo.message)
     } finally {
-      loading.value = false
+      saving.value = false
     }
   }
 </script>

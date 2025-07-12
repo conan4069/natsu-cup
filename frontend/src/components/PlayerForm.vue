@@ -11,11 +11,12 @@
       prepend-inner-icon="mdi-account"
       class="mb-4"
       rounded="xl"
+      color="primary"
       :readonly="readonly || mode === 'view'"
     />
 
     <!-- Avatar actual (solo en modo edición) -->
-  
+
     <!-- Subida de avatar -->
     <div
       v-if="!readonly && mode !== 'view'"
@@ -50,7 +51,7 @@
         <v-img alt="Avatar actual" :src="player.avatar" />
       </v-avatar>
     </div>
-    
+
     <!-- Información adicional -->
   </v-form>
 </template>

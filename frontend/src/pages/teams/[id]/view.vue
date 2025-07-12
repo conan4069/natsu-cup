@@ -8,13 +8,13 @@
     <!-- Error state -->
     <div v-else-if="error" class="text-center py-8">
       <v-icon class="mb-4" color="error" size="64">mdi-alert-circle</v-icon>
-      <h3 class="text-h6 text-grey-darken-1 mb-2">Error al cargar jugador</h3>
+      <h3 class="text-h6 text-grey-darken-1 mb-2">Error al cargar equipo</h3>
       <p class="text-body-2 text-grey-darken-1 mb-4">{{ error }}</p>
-      <v-btn color="primary" @click="loadPlayer">Reintentar</v-btn>
+      <v-btn color="primary" @click="loadTeam">Reintentar</v-btn>
     </div>
 
-    <!-- Player details -->
-    <div v-else-if="player">
+    <!-- Team details -->
+    <div v-else-if="team">
       <!-- Header -->
       <v-row class="mb-6">
         <v-col cols="12">
@@ -28,18 +28,18 @@
             <div class="d-flex align-center">
               <v-avatar class="mr-4" size="80">
                 <v-img
-                  v-if="player.avatar"
-                  alt="Avatar del jugador"
-                  :src="player.avatar"
+                  v-if="team.logo"
+                  alt="Logo del equipo"
+                  :src="team.logo"
                 />
                 <v-icon v-else color="grey" size="40">
-                  mdi-account
+                  mdi-shield
                 </v-icon>
               </v-avatar>
               <div>
-                <h1 class="text-h4 font-weight-bold mb-2">{{ player.display_name }}</h1>
+                <h1 class="text-h4 font-weight-bold mb-2">{{ team.name }}</h1>
                 <p class="text-body-1 text-grey-darken-1">
-                  Jugador del campeonato Natsu Cup
+                  Equipo del campeonato Natsu Cup
                 </p>
               </div>
             </div>
@@ -49,17 +49,17 @@
 
       <!-- Content -->
       <v-row>
-        <!-- Player info card -->
+        <!-- Team info card -->
         <v-col cols="12" md="6">
           <v-card>
             <v-card-title class="text-h6">
-              <v-icon start>mdi-account-details</v-icon>
-              Información del Jugador
+              <v-icon start>mdi-shield-account</v-icon>
+              Información del Equipo
             </v-card-title>
             <v-card-text>
-              <PlayerForm
+              <TeamForm
                 mode="view"
-                :player="player"
+                :team="team"
                 readonly
               />
             </v-card-text>
@@ -69,7 +69,7 @@
                 color="warning"
                 prepend-icon="mdi-pencil"
                 variant="outlined"
-                @click="editPlayer"
+                @click="editTeam"
               >
                 Editar
               </v-btn>
@@ -83,6 +83,12 @@
             <v-card-title class="text-h6">
               <v-icon start>mdi-chart-line</v-icon>
               Estadísticas
+              <v-progress-circular
+                v-if="loadingStats"
+                indeterminate
+                size="20"
+                class="ml-2"
+              />
             </v-card-title>
             <v-card-text>
               <v-row>
@@ -169,7 +175,7 @@
                   No hay torneos registrados
                 </h4>
                 <p class="text-body-2 text-grey-darken-1">
-                  Este jugador aún no ha participado en ningún torneo.
+                  Este equipo aún no ha participado en ningún torneo.
                 </p>
               </div>
               <v-list v-else>
@@ -204,48 +210,88 @@
 <script setup>
   import { onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import PlayerForm from '@/components/PlayerForm.vue'
-  import { handleApiError, playerAPI } from '@/services/api'
+  import TeamForm from '@/components/TeamForm.vue'
+  import { handleApiError, teamAPI } from '@/services/api'
 
   // Router y Route
   const router = useRouter()
   const route = useRoute()
 
   // Estado reactivo
-  const player = ref(null)
+  const team = ref(null)
   const loading = ref(true)
+  const loadingStats = ref(false)
+  const loadingTournaments = ref(false)
   const error = ref(null)
   const stats = ref({
-    tournaments: 0,
-    matches: 0,
+    total_tournaments: 0,
+    total_matches: 0,
     wins: 0,
     losses: 0,
+    draws: 0,
+    win_rate: 0,
+    loss_rate: 0,
+    draw_rate: 0,
+    total_points: 0
   })
   const recentTournaments = ref([])
 
-  // Cargar jugador
-  const loadPlayer = async () => {
-    const playerId = route.params.id
+  // Cargar equipo
+  const loadTeam = async () => {
+    const teamId = route.params.id
 
     loading.value = true
     error.value = null
 
     try {
-      // Cargar datos del jugador
-      const playerResponse = await playerAPI.getPlayer(playerId)
-      player.value = playerResponse.data
+      console.log('Cargando equipo con ID:', teamId)
 
-      // Cargar estadísticas del jugador
-      const statsResponse = await playerAPI.getPlayerStats(playerId)
-      stats.value = statsResponse.data
+      // Cargar datos del equipo
+      const teamResponse = await teamAPI.getTeam(teamId)
+      team.value = teamResponse.data
+      console.log('Datos del equipo cargados:', team.value)
 
-      // Cargar torneos del jugador
-      const tournamentsResponse = await playerAPI.getPlayerTournaments(playerId)
-      recentTournaments.value = tournamentsResponse.data.tournaments
+      // Cargar estadísticas del equipo
+      try {
+        loadingStats.value = true
+        const statsResponse = await teamAPI.getTeamStats(teamId)
+        stats.value = statsResponse.data
+        console.log('Estadísticas del equipo cargadas:', stats.value)
+      } catch (statsError) {
+        console.error('Error al cargar estadísticas:', statsError)
+        // No fallar completamente si las estadísticas fallan
+        stats.value = {
+          total_tournaments: 0,
+          total_matches: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          win_rate: 0,
+          loss_rate: 0,
+          draw_rate: 0,
+          total_points: 0
+        }
+      } finally {
+        loadingStats.value = false
+      }
+
+      // Cargar torneos del equipo
+      try {
+        loadingTournaments.value = true
+        const tournamentsResponse = await teamAPI.getTeamTournaments(teamId)
+        recentTournaments.value = tournamentsResponse.data.tournaments
+        console.log('Torneos del equipo cargados:', recentTournaments.value)
+      } catch (tournamentsError) {
+        console.error('Error al cargar torneos:', tournamentsError)
+        // No fallar completamente si los torneos fallan
+        recentTournaments.value = []
+      } finally {
+        loadingTournaments.value = false
+      }
     } catch (error_) {
       const errorInfo = handleApiError(error_)
       error.value = errorInfo.message
-      console.error('Error al cargar jugador:', errorInfo.message)
+      console.error('Error al cargar equipo:', errorInfo.message)
     } finally {
       loading.value = false
     }
@@ -253,16 +299,16 @@
 
   // Navegación
   const goBack = () => {
-    router.push('/players')
+    router.push('/teams')
   }
 
-  const editPlayer = () => {
-    router.push(`/players/${player.value.id}/edit`)
+  const editTeam = () => {
+    router.push(`/teams/${team.value.id}/edit`)
   }
 
   // Cargar datos al montar el componente
   onMounted(() => {
-    loadPlayer()
+    loadTeam()
   })
 </script>
 

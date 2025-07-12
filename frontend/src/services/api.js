@@ -40,6 +40,15 @@ export const tournamentAPI = {
 export const matchAPI = {
   // Obtener partido específico
   getMatch: matchId => api.get(`/matches/${matchId}/`),
+
+  // Actualizar resultado del partido
+  updateMatchResult: (matchId, data) => api.put(`/matches/${matchId}/`, data),
+
+  // Obtener partidos de un torneo
+  getTournamentMatches: tournamentId => api.get(`/tournaments/${tournamentId}/matches/`),
+
+  // Marcar partido como jugado
+  markMatchAsPlayed: (matchId, data) => api.patch(`/matches/${matchId}/`, data),
 }
 
 // Funciones de API para jugadores
@@ -89,10 +98,10 @@ export const teamAPI = {
   // Eliminar equipo
   deleteTeam: teamId => api.delete(`/teams/${teamId}/`),
 
-  // Obtener estadísticas del equipo (si aplica)
+  // Obtener estadísticas del equipo
   getTeamStats: teamId => api.get(`/teams/${teamId}/stats/`),
 
-  // Obtener torneos del equipo (si aplica)
+  // Obtener torneos del equipo
   getTeamTournaments: teamId => api.get(`/teams/${teamId}/tournaments/`),
 }
 

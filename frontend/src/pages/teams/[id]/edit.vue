@@ -8,13 +8,13 @@
     <!-- Error state -->
     <div v-else-if="error" class="text-center py-8">
       <v-icon class="mb-4" color="error" size="64">mdi-alert-circle</v-icon>
-      <h3 class="text-h6 text-grey-darken-1 mb-2">Error al cargar jugador</h3>
+      <h3 class="text-h6 text-grey-darken-1 mb-2">Error al cargar equipo</h3>
       <p class="text-body-2 text-grey-darken-1 mb-4">{{ error }}</p>
-      <v-btn color="primary" @click="loadPlayer">Reintentar</v-btn>
+      <v-btn color="primary" @click="loadTeam">Reintentar</v-btn>
     </div>
 
     <!-- Edit form -->
-    <div v-else-if="player">
+    <div v-else-if="team">
       <!-- Header -->
       <v-row class="mb-6">
         <v-col cols="12">
@@ -26,9 +26,9 @@
               @click="goBack"
             />
             <div>
-              <h1 class="text-h4 font-weight-bold mb-2">Editar Jugador</h1>
+              <h1 class="text-h4 font-weight-bold mb-2">Editar Equipo</h1>
               <p class="text-body-1 text-grey-darken-1">
-                Modifica la información de {{ player.display_name }}
+                Modifica la información de {{ team.name }}
               </p>
             </div>
           </div>
@@ -40,14 +40,14 @@
         <v-col cols="12" lg="6" md="8">
           <v-card>
             <v-card-title class="text-h6 pa-6 pb-0">
-              Información del Jugador
+              Información del Equipo
             </v-card-title>
 
             <v-card-text class="pa-6">
               <TeamForm
                 ref="teamFormRef"
                 mode="edit"
-                :team="player"
+                :team="team"
                 @valid-change="handleValidChange"
               />
             </v-card-text>
@@ -76,7 +76,7 @@
                 :disabled="!formValid"
                 :loading="saving"
                 variant="elevated"
-                @click="savePlayer"
+                @click="saveTeam"
               >
                 <v-icon start>mdi-content-save</v-icon>
                 Guardar Cambios
@@ -94,8 +94,8 @@
           Confirmar eliminación
         </v-card-title>
         <v-card-text>
-          ¿Estás seguro de que quieres eliminar al jugador
-          <strong>{{ player?.display_name }}</strong>?
+          ¿Estás seguro de que quieres eliminar al equipo
+          <strong>{{ team?.name }}</strong>?
           Esta acción no se puede deshacer.
         </v-card-text>
         <v-card-actions>
@@ -110,7 +110,7 @@
             color="error"
             :loading="deleting"
             variant="elevated"
-            @click="deletePlayer"
+            @click="deleteTeam"
           >
             Eliminar
           </v-btn>
@@ -124,7 +124,7 @@
   import { onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import TeamForm from '@/components/TeamForm.vue'
-  import { handleApiError, playerAPI } from '@/services/api'
+  import { handleApiError, teamAPI } from '@/services/api'
 
   // Router y Route
   const router = useRouter()
@@ -135,27 +135,27 @@
   const formValid = ref(false)
 
   // Estado reactivo
-  const player = ref(null)
+  const team = ref(null)
   const loading = ref(true)
   const saving = ref(false)
   const deleting = ref(false)
   const error = ref(null)
   const deleteDialog = ref(false)
 
-  // Cargar jugador
-  const loadPlayer = async () => {
-    const playerId = route.params.id
+  // Cargar equipo
+  const loadTeam = async () => {
+    const teamId = route.params.id
 
     loading.value = true
     error.value = null
 
     try {
-      const response = await playerAPI.getPlayer(playerId)
-      player.value = response.data
+      const response = await teamAPI.getTeam(teamId)
+      team.value = response.data
     } catch (error_) {
       const errorInfo = handleApiError(error_)
       error.value = errorInfo.message
-      console.error('Error al cargar jugador:', errorInfo.message)
+      console.error('Error al cargar equipo:', errorInfo.message)
     } finally {
       loading.value = false
     }
@@ -168,34 +168,34 @@
 
   // Navegación
   const goBack = () => {
-    router.push(`/players/${player.value.id}`)
+    router.push(`/teams/${team.value.id}`)
   }
 
   // Guardar cambios
-  const savePlayer = async () => {
+  const saveTeam = async () => {
     if (!formValid.value) return
 
     saving.value = true
     try {
-      const playerId = route.params.id
+      const teamId = route.params.id
 
       // Obtener FormData del formulario
       const formData = teamFormRef.value.getFormData()
 
       // Enviar a la API
-      await playerAPI.updatePlayer(playerId, formData)
+      await teamAPI.updateTeam(teamId, formData)
 
-      // Redirigir al detalle del jugador
+      // Redirigir al detalle del equipo
       router.push({
-        path: `/players/${playerId}`,
+        path: `/teams/${teamId}`,
         query: {
           success: 'true',
-          message: 'Jugador actualizado exitosamente',
+          message: 'Equipo actualizado exitosamente',
         },
       })
     } catch (error) {
       const errorInfo = handleApiError(error)
-      console.error('Error al actualizar jugador:', errorInfo.message)
+      console.error('Error al actualizar equipo:', errorInfo.message)
     // Aquí podrías mostrar una notificación de error
     } finally {
       saving.value = false
@@ -207,26 +207,26 @@
     deleteDialog.value = true
   }
 
-  const deletePlayer = async () => {
-    if (!player.value) return
+  const deleteTeam = async () => {
+    if (!team.value) return
 
     deleting.value = true
     try {
-      await playerAPI.deletePlayer(player.value.id)
+      await teamAPI.deleteTeam(team.value.id)
 
       deleteDialog.value = false
 
       // Redirigir al listado
       router.push({
-        path: '/players',
+        path: '/teams',
         query: {
           success: 'true',
-          message: 'Jugador eliminado exitosamente',
+          message: 'Equipo eliminado exitosamente',
         },
       })
     } catch (error) {
       const errorInfo = handleApiError(error)
-      console.error('Error al eliminar jugador:', errorInfo.message)
+      console.error('Error al eliminar equipo:', errorInfo.message)
     // Aquí podrías mostrar una notificación de error
     } finally {
       deleting.value = false
@@ -235,7 +235,7 @@
 
   // Cargar datos al montar el componente
   onMounted(() => {
-    loadPlayer()
+    loadTeam()
   })
 </script>
 

@@ -1,136 +1,439 @@
 <template>
-  <v-container fluid class="pa-0">
-  <!-- Hero Section -->
-  <v-parallax src="@/assets/fondocesped.jpg">
-    <v-row no-gutters>
-      <v-col cols="12" class="d-flex justify-center">
-        <div class="text-center" style="transform: translateX(-4%);">
-          <v-img src="@/assets/LogoCup.png" width="600" class="mb-16" style="transform: translateX(6.4%);"></v-img>
-          <v-icon size="120" color="primary" class="mb-16" style="padding-bottom: 700px;"></v-icon>
-          <v-btn
-            prepend-icon="mdi-account" stacked
-            size="x-large"
-            color="primary"
-            variant="elevated"
-            class="px-5 mr-11"
-            style="transform: translateY(-175%);"
-            rounded="xl"
-            @click="navigateToTournaments"
-          > 
-          <h4>Registrarse</h4>
-          </v-btn>
+  <v-container fluid>
+    <!-- Header -->
+    <v-row class="mb-6">
+      <v-col cols="12">
+        <div class="text-center">
+          <v-img
+            src="@/assets/LogoCup.png"
+            alt="Natsu Cup Logo"
+            class="mx-auto mb-4"
+            max-width="200"
+          />
+          <h1 class="text-h3 font-weight-bold mb-2">Natsu Cup</h1>
+          <p class="text-h6 text-grey-darken-1">
+            Sistema de Gestión de Torneos de Fútbol
+          </p>
         </div>
       </v-col>
     </v-row>
-  </v-parallax>
 
+    <!-- Loading state -->
+    <div v-if="loading" class="d-flex justify-center align-center" style="min-height: 400px;">
+      <v-progress-circular color="primary" indeterminate size="64" />
+    </div>
+
+    <!-- Dashboard content -->
+    <div v-else>
+      <!-- Statistics cards -->
+      <v-row class="mb-6">
+        <v-col cols="12" sm="6" md="3">
+          <v-card class="stat-card">
+            <v-card-text class="text-center">
+              <v-icon size="48" color="primary" class="mb-3">mdi-trophy</v-icon>
+              <div class="text-h4 font-weight-bold text-primary mb-2">
+                {{ stats.totalTournaments }}
+              </div>
+              <div class="text-body-2 text-grey-darken-1">
+                Torneos Creados
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" sm="6" md="3">
+          <v-card class="stat-card">
+            <v-card-text class="text-center">
+              <v-icon size="48" color="success" class="mb-3">mdi-account-group</v-icon>
+              <div class="text-h4 font-weight-bold text-success mb-2">
+                {{ stats.totalPlayers }}
+              </div>
+              <div class="text-body-2 text-grey-darken-1">
+                Jugadores Registrados
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" sm="6" md="3">
+          <v-card class="stat-card">
+            <v-card-text class="text-center">
+              <v-icon size="48" color="warning" class="mb-3">mdi-shield</v-icon>
+              <div class="text-h4 font-weight-bold text-warning mb-2">
+                {{ stats.totalTeams }}
+              </div>
+              <div class="text-body-2 text-grey-darken-1">
+                Equipos Creados
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" sm="6" md="3">
+          <v-card class="stat-card">
+            <v-card-text class="text-center">
+              <v-icon size="48" color="info" class="mb-3">mdi-soccer</v-icon>
+              <div class="text-h4 font-weight-bold text-info mb-2">
+                {{ stats.totalMatches }}
+              </div>
+              <div class="text-body-2 text-grey-darken-1">
+                Partidos Jugados
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- Recent activity and quick actions -->
+      <v-row>
+        <!-- Recent tournaments -->
+        <v-col cols="12" md="8">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start>mdi-trophy</v-icon>
+              Torneos Recientes
+            </v-card-title>
+            <v-card-text>
+              <div v-if="recentTournaments.length === 0" class="text-center py-8">
+                <v-icon class="mb-4" color="grey-lighten-1" size="48">
+                  mdi-trophy-outline
+                </v-icon>
+                <h4 class="text-h6 text-grey-darken-1 mb-2">
+                  No hay torneos creados
+                </h4>
+                <p class="text-body-2 text-grey-darken-1 mb-4">
+                  Crea tu primer torneo para comenzar
+                </p>
+                <v-btn
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  variant="elevated"
+                  @click="createTournament"
+                >
+                  Crear Torneo
+                </v-btn>
+              </div>
+              <v-list v-else>
+                <v-list-item
+                  v-for="tournament in recentTournaments"
+                  :key="tournament.id"
+                  :subtitle="`${tournament.format} • ${tournament.team_count || 0} equipos`"
+                  :title="tournament.name"
+                  @click="viewTournament(tournament.id)"
+                >
+                  <template #prepend>
+                    <v-icon color="primary">mdi-trophy</v-icon>
+                  </template>
+                  <template #append>
+                    <v-chip
+                      :color="tournament.status === 'completed' ? 'success' : 'warning'"
+                      size="small"
+                      variant="outlined"
+                    >
+                      {{ tournament.status === 'completed' ? 'Completado' : 'En progreso' }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <!-- Quick actions -->
+        <v-col cols="12" md="4">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start>mdi-lightning-bolt</v-icon>
+              Acciones Rápidas
+            </v-card-title>
+            <v-card-text>
+              <div class="d-flex flex-column gap-3">
+                <v-btn
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  variant="elevated"
+                  block
+                  @click="createTournament"
+                >
+                  Crear Torneo
+                </v-btn>
+
+                <v-btn
+                  color="success"
+                  prepend-icon="mdi-account-plus"
+                  variant="outlined"
+                  block
+                  @click="createPlayer"
+                >
+                  Agregar Jugador
+                </v-btn>
+
+                <v-btn
+                  color="warning"
+                  prepend-icon="mdi-shield-plus"
+                  variant="outlined"
+                  block
+                  @click="createTeam"
+                >
+                  Crear Equipo
+                </v-btn>
+
+                <v-btn
+                  color="info"
+                  prepend-icon="mdi-chart-line"
+                  variant="outlined"
+                  block
+                  @click="viewStats"
+                >
+                  Ver Estadísticas
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- Top players and teams -->
+      <v-row class="mt-6">
+        <v-col cols="12" md="6">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start>mdi-account-star</v-icon>
+              Jugadores Destacados
+            </v-card-title>
+            <v-card-text>
+              <div v-if="topPlayers.length === 0" class="text-center py-4">
+                <p class="text-body-2 text-grey-darken-1">
+                  No hay jugadores registrados
+                </p>
+              </div>
+              <v-list v-else>
+                <v-list-item
+                  v-for="(player, index) in topPlayers"
+                  :key="player.id"
+                  :subtitle="`${player.total_matches} partidos • ${player.win_rate}% victorias`"
+                  :title="player.display_name"
+                >
+                  <template #prepend>
+                    <v-avatar size="32" class="mr-3">
+                      <v-img
+                        v-if="player.avatar"
+                        :src="player.avatar"
+                        alt="Avatar"
+                      />
+                      <v-icon v-else>mdi-account</v-icon>
+                    </v-avatar>
+                  </template>
+                  <template #append>
+                    <v-chip
+                      :color="index === 0 ? 'warning' : 'grey'"
+                      size="small"
+                      variant="outlined"
+                    >
+                      #{{ index + 1 }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="6">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start>mdi-shield-star</v-icon>
+              Equipos Destacados
+            </v-card-title>
+            <v-card-text>
+              <div v-if="topTeams.length === 0" class="text-center py-4">
+                <p class="text-body-2 text-grey-darken-1">
+                  No hay equipos registrados
+                </p>
+              </div>
+              <v-list v-else>
+                <v-list-item
+                  v-for="(team, index) in topTeams"
+                  :key="team.id"
+                  :subtitle="`${team.total_matches} partidos • ${team.win_rate}% victorias`"
+                  :title="team.name"
+                >
+                  <template #prepend>
+                    <v-avatar size="32" class="mr-3">
+                      <v-img
+                        v-if="team.logo"
+                        :src="team.logo"
+                        alt="Logo"
+                      />
+                      <v-icon v-else>mdi-shield</v-icon>
+                    </v-avatar>
+                  </template>
+                  <template #append>
+                    <v-chip
+                      :color="index === 0 ? 'warning' : 'grey'"
+                      size="small"
+                      variant="outlined"
+                    >
+                      #{{ index + 1 }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
   </v-container>
 </template>
 
 <script setup>
-// Datos de ejemplo para torneos activos
-const activeTournaments = ref([
-  {
-    id: 1,
-    name: 'Torneo de Verano 2024',
-    description: 'El torneo más caliente del año. ¿Quién será el campeón?',
-    status: 'active',
-    participants: 12,
-    maxParticipants: 16,
-    date: '15 Jul 2024',
-    prize: '🏆 Trofeo + $500',
-    image: '/api/placeholder/400/200'
-  },
-  {
-    id: 2,
-    name: 'Clásico de Amigos',
-    description: 'Solo para el grupo de amigos de siempre. Sin presión, solo diversión.',
-    status: 'active',
-    participants: 8,
-    maxParticipants: 8,
-    date: '20 Jul 2024',
-    prize: '🏆 Trofeo + Cena',
-    image: '/api/placeholder/400/200'
-  },
-  {
-    id: 3,
-    name: 'Nueva Sangre',
-    description: 'Torneo para nuevos jugadores. ¡Perfecto para empezar!',
-    status: 'upcoming',
-    participants: 4,
-    maxParticipants: 12,
-    date: '25 Jul 2024',
-    prize: '🏆 Trofeo + Entrenamiento',
-    image: '/api/placeholder/400/200'
-  }
-])
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { handleApiError, tournamentAPI, playerAPI, teamAPI } from '@/services/api'
+import { samplePlayers, sampleTeams, sampleTournaments } from '@/data/sampleData'
 
-// Métodos de navegación
-const navigateToTournaments = () => {
-  // Navegar a la página de torneos
-  console.log('Navegando a torneos')
+// Router
+const router = useRouter()
+
+// Estado reactivo
+const loading = ref(true)
+const stats = ref({
+  totalTournaments: 0,
+  totalPlayers: 0,
+  totalTeams: 0,
+  totalMatches: 0
+})
+const recentTournaments = ref([])
+const topPlayers = ref([])
+const topTeams = ref([])
+
+// Cargar datos del dashboard
+const loadDashboard = async () => {
+  loading.value = true
+
+  try {
+    // Intentar cargar datos reales primero
+    try {
+      const [tournamentsRes, playersRes, teamsRes] = await Promise.all([
+        tournamentAPI.getTournaments(),
+        playerAPI.getPlayers(),
+        teamAPI.getTeams()
+      ])
+
+      const tournaments = tournamentsRes.data
+      const players = playersRes.data
+      const teams = teamsRes.data
+
+      // Calcular estadísticas
+      stats.value = {
+        totalTournaments: tournaments.length,
+        totalPlayers: players.length,
+        totalTeams: teams.length,
+        totalMatches: tournaments.reduce((total, t) => total + (t.matches_count || 0), 0)
+      }
+
+      // Obtener torneos recientes
+      recentTournaments.value = tournaments
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5)
+
+      // Obtener jugadores destacados
+      topPlayers.value = players
+        .filter(p => p.stats)
+        .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
+        .slice(0, 5)
+
+      // Obtener equipos destacados
+      topTeams.value = teams
+        .filter(t => t.stats)
+        .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
+        .slice(0, 5)
+
+    } catch (apiError) {
+      console.log('API no disponible, usando datos de ejemplo')
+      // Usar datos de ejemplo si la API no está disponible
+      const tournaments = sampleTournaments
+      const players = samplePlayers
+      const teams = sampleTeams
+
+      // Calcular estadísticas
+      stats.value = {
+        totalTournaments: tournaments.length,
+        totalPlayers: players.length,
+        totalTeams: teams.length,
+        totalMatches: tournaments.reduce((total, t) => total + (t.matches_count || 0), 0)
+      }
+
+      // Obtener torneos recientes
+      recentTournaments.value = tournaments
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5)
+
+      // Obtener jugadores destacados
+      topPlayers.value = players
+        .filter(p => p.stats)
+        .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
+        .slice(0, 5)
+
+      // Obtener equipos destacados
+      topTeams.value = teams
+        .filter(t => t.stats)
+        .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
+        .slice(0, 5)
+    }
+
+  } catch (error) {
+    const errorInfo = handleApiError(error)
+    console.error('Error al cargar dashboard:', errorInfo.message)
+  } finally {
+    loading.value = false
+  }
 }
 
-const joinTournament = (tournamentId) => {
-  console.log('Uniéndose al torneo:', tournamentId)
-  // Aquí iría la lógica para unirse al torneo
+// Navegación
+const createTournament = () => {
+  router.push('/tournaments/create')
+}
+
+const createPlayer = () => {
+  router.push('/players/create')
+}
+
+const createTeam = () => {
+  router.push('/teams/create')
+}
+
+const viewStats = () => {
+  // Aquí podrías navegar a una página de estadísticas detalladas
+  console.log('Ver estadísticas detalladas')
 }
 
 const viewTournament = (tournamentId) => {
-  console.log('Viendo torneo:', tournamentId)
-  // Aquí iría la lógica para ver detalles del torneo
+  router.push(`/tournaments/${tournamentId}`)
 }
 
-const createTournament = () => {
-  console.log('Creando nuevo torneo')
-  // Aquí iría la lógica para crear un torneo
-}
-
-const getStarted = () => {
-  console.log('Comenzando con Natsu Cup')
-  // Aquí iría la lógica para comenzar
-}
+// Cargar datos al montar el componente
+onMounted(() => {
+  loadDashboard()
+})
 </script>
 
 <style scoped>
-.hero-section {
-  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
-  min-height: 80vh;
-  position: relative;
-}
-
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.3;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-}
-
 .stat-card {
-  padding: 2rem;
-  border-radius: 12px;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-2px);
 }
 
-.v-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+.v-list-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.v-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+.v-list-item:hover {
+  background-color: rgba(var(--v-theme-primary), 0.1);
 }
 </style>

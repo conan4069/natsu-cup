@@ -13,8 +13,8 @@
           <v-btn
             color="primary"
             prepend-icon="mdi-plus"
-            size="x-large"
             rounded="xl"
+            size="x-large"
             @click="navigateToCreate"
           >
             Nuevo Equipo
@@ -28,26 +28,26 @@
       <v-col cols="12" md="6" style="transform: translateX(50%);">
         <v-text-field
           v-model="searchQuery"
+          bg-color="white"
+          color="primary"
           density="comfortable"
           hide-details
           placeholder="Buscar equipos..."
           prepend-inner-icon="mdi-magnify"
-          variant="outlined"
           rounded="xl"
-          color="primary"
-          bg-color="white"
+          variant="outlined"
           @input="filterTeams"
         />
       </v-col>
       <v-col class="d-flex justify-end" cols="12" md="6">
         <v-btn
-          :loading="loading"
-          prepend-icon="mdi-refresh"
-          variant="outlined"
-          rounded="xl"
-          size="large"
           class="pt-3 pb-4 "
           color="primary"
+          :loading="loading"
+          prepend-icon="mdi-refresh"
+          rounded="xl"
+          size="large"
+          variant="outlined"
           @click="loadTeams"
         >
           Actualizar
@@ -65,24 +65,24 @@
         :loading="loading"
       >
         <!-- imagen del equipo -->
-        <template #item.avatar="{ item }">
+        <template #item.logo="{ item }">
           <v-avatar class="mr-3" size="48">
             <v-img
-              v-if="item.avatar"
-              alt="Avatar del equipo"
-              :src="item.avatar"
+              v-if="item.logo"
+              alt="Logo del equipo"
+              :src="item.logo"
             />
             <v-icon v-else color="grey" size="24">
-              mdi-account-group
+              mdi-shield
             </v-icon>
           </v-avatar>
         </template>
 
         <!-- Nombre del equipo -->
-        <template #item.display_name="{ item }">
+        <template #item.name="{ item }">
           <div class="d-flex align-center">
             <div>
-              <div class="font-weight-medium text-h6">{{ item.display_name }}</div>
+              <div class="font-weight-medium text-h6">{{ item.name }}</div>
             </div>
           </div>
         </template>
@@ -132,8 +132,8 @@
             <v-btn
               color="primary"
               prepend-icon="mdi-plus"
-              size="large"
               rounded="xl"
+              size="large"
               @click="navigateToCreate"
             >
               Agregar Equipo
@@ -151,14 +151,14 @@
         </v-card-title>
         <v-card-text>
           ¿Estás seguro de que quieres eliminar al equipo
-          <strong>{{ teamToDelete?.display_name }}</strong>?
+          <strong>{{ teamToDelete?.name }}</strong>?
           Esta acción no se puede deshacer.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn
-            variant="outlined"
             rounded="xl"
+            variant="outlined"
             @click="deleteDialog = false"
           >
             Cancelar
@@ -166,8 +166,8 @@
           <v-btn
             color="error"
             :loading="deleting"
-            variant="elevated"
             rounded="xl"
+            variant="elevated"
             @click="deleteTeam"
           >
             Eliminar
@@ -180,8 +180,9 @@
 
 <script setup>
   import { computed, onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
-  import { handleApiError, teamAPI } from '@/services/api'
+import { useRouter } from 'vue-router'
+import { handleApiError, teamAPI } from '@/services/api'
+import { sampleTeams } from '@/data/sampleData'
 
   // Router
   const router = useRouter()
@@ -196,8 +197,8 @@
 
   // Headers de la tabla
   const headers = [
-    { title: 'Logo', key: 'avatar', sortable: false },
-    { title: 'Equipo', key: 'display_name', sortable: true },
+    { title: 'Logo', key: 'logo', sortable: false },
+    { title: 'Equipo', key: 'name', sortable: true },
     { title: 'Acciones', key: 'actions', sortable: false, align: 'end' },
   ]
 
@@ -206,7 +207,7 @@
     if (!searchQuery.value) return teams.value
     const query = searchQuery.value.toLowerCase()
     return teams.value.filter(team =>
-      team.display_name.toLowerCase().includes(query)
+      team.name.toLowerCase().includes(query)
       || team.id.toString().includes(query),
     )
   })
@@ -215,8 +216,15 @@
   const loadTeams = async () => {
     loading.value = true
     try {
-      const response = await teamAPI.getTeams()
-      teams.value = response.data
+      // Intentar cargar datos reales primero
+      try {
+        const response = await teamAPI.getTeams()
+        teams.value = response.data
+      } catch (apiError) {
+        console.log('API no disponible, usando datos de ejemplo')
+        // Usar datos de ejemplo si la API no está disponible
+        teams.value = sampleTeams
+      }
     } catch (error) {
       const errorInfo = handleApiError(error)
       console.error('Error al cargar equipos:', errorInfo.message)

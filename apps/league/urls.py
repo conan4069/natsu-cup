@@ -31,6 +31,7 @@ urlpatterns = [
       name='complete-knockout'
     ),
     path('matches/<int:pk>/', views.MatchDetailView.as_view()),
+    path('tournaments/<int:tournament_id>/matches/', views.TournamentMatchesView.as_view()),
     path('players/', views.PlayerListView.as_view()),
     path('players/create/', views.PlayerCreateView.as_view()),
     path('players/<int:pk>/', views.PlayerDetailView.as_view()),
@@ -38,6 +39,8 @@ urlpatterns = [
     path('players/<int:player_id>/tournaments/', views.PlayerTournamentsView.as_view()),
     path('teams/', views.GameTeamListCreateView.as_view()),
     path('teams/<int:pk>/', views.GameTeamDetailView.as_view()),
+    path('teams/<int:team_id>/stats/', views.GameTeamStatsView.as_view()),
+    path('teams/<int:team_id>/tournaments/', views.GameTeamTournamentsView.as_view()),
     # urls.py
 
 ]

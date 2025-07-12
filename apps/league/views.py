@@ -208,6 +208,128 @@ class GameTeamDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GameTeam.objects.all()
     serializer_class = GameTeamSerializer
 
+class GameTeamStatsView(views.APIView):
+    def get(self, request, team_id):
+        try:
+            team = GameTeam.objects.get(pk=team_id)
+        except GameTeam.DoesNotExist:
+            return Response({'error': 'Team not found'}, status=404)
+        
+        # Obtener todas las entradas donde este equipo fue asignado
+        team_entries = TeamEntry.objects.filter(assigned_team=team)
+        
+        # Estadísticas básicas
+        total_tournaments = team_entries.count()
+        total_matches = 0
+        wins = 0
+        losses = 0
+        draws = 0
+        
+        # Calcular estadísticas de partidos
+        for entry in team_entries:
+            matches = Match.objects.filter(participants=entry, played=True)
+            total_matches += matches.count()
+            
+            for match in matches:
+                goals = match.goals
+                if goals:
+                    # Obtener goles del equipo
+                    entry_goals = goals.get(str(entry.id), 0)
+                    other_goals = sum(g for k, g in goals.items() if k != str(entry.id))
+                    
+                    if entry_goals > other_goals:
+                        wins += 1
+                    elif entry_goals < other_goals:
+                        losses += 1
+                    else:
+                        draws += 1
+        
+        # Calcular porcentajes
+        win_rate = (wins / total_matches * 100) if total_matches > 0 else 0
+        loss_rate = (losses / total_matches * 100) if total_matches > 0 else 0
+        draw_rate = (draws / total_matches * 100) if total_matches > 0 else 0
+        
+        stats = {
+            'team_id': team.id,
+            'team_name': team.name,
+            'total_tournaments': total_tournaments,
+            'total_matches': total_matches,
+            'wins': wins,
+            'losses': losses,
+            'draws': draws,
+            'win_rate': round(win_rate, 1),
+            'loss_rate': round(loss_rate, 1),
+            'draw_rate': round(draw_rate, 1),
+            'total_points': wins * 3 + draws,  # Sistema de puntos: 3 por victoria, 1 por empate
+        }
+        
+        return Response(stats)
+
+class GameTeamTournamentsView(views.APIView):
+    def get(self, request, team_id):
+        try:
+            team = GameTeam.objects.get(pk=team_id)
+        except GameTeam.DoesNotExist:
+            return Response({'error': 'Team not found'}, status=404)
+        
+        # Obtener todas las entradas del equipo con información del torneo
+        team_entries = TeamEntry.objects.filter(assigned_team=team).select_related('tournament')
+        
+        tournaments = []
+        for entry in team_entries:
+            tournament = entry.tournament
+            
+            # Obtener estadísticas del equipo en este torneo
+            tournament_matches = Match.objects.filter(
+                participants=entry,
+                played=True
+            )
+            
+            tournament_wins = 0
+            tournament_losses = 0
+            tournament_draws = 0
+            
+            for match in tournament_matches:
+                goals = match.goals
+                if goals:
+                    entry_goals = goals.get(str(entry.id), 0)
+                    other_goals = sum(g for k, g in goals.items() if k != str(entry.id))
+                    
+                    if entry_goals > other_goals:
+                        tournament_wins += 1
+                    elif entry_goals < other_goals:
+                        tournament_losses += 1
+                    else:
+                        tournament_draws += 1
+            
+            # Calcular posición (simplificado)
+            total_matches = tournament_wins + tournament_losses + tournament_draws
+            points = tournament_wins * 3 + tournament_draws
+            
+            tournaments.append({
+                'id': tournament.id,
+                'name': tournament.name,
+                'format': tournament.format,
+                'entry_id': entry.id,
+                'matches_played': total_matches,
+                'wins': tournament_wins,
+                'losses': tournament_losses,
+                'draws': tournament_draws,
+                'points': points,
+                'win_rate': round((tournament_wins / total_matches * 100) if total_matches > 0 else 0, 1),
+                'status': 'completed' if total_matches > 0 else 'registered'
+            })
+        
+        # Ordenar por fecha de creación (más recientes primero)
+        tournaments.sort(key=lambda x: x['id'], reverse=True)
+        
+        return Response({
+            'team_id': team.id,
+            'team_name': team.name,
+            'tournaments': tournaments,
+            'total_tournaments': len(tournaments)
+        })
+
 # 🎮 Detalle de partido
 class MatchDetailView(generics.RetrieveAPIView):
     queryset = Match.objects.all()
@@ -283,6 +405,57 @@ class CompleteKnockoutStageView(APIView):
       'playoffs_created': [m.id for m in playoff_matches],
       'matches_created': [m.id for m in knockout] if knockout else []
     }, status=201)
+
+class TournamentMatchesView(APIView):
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+
+        # Obtener todos los partidos del torneo
+        matches = Match.objects.filter(tournament=tournament)
+        
+        match_data = []
+        for match in matches:
+            participants = list(match.participants.all())
+            
+            # Determinar ganador si el partido está jugado
+            winner = None
+            if match.played and match.goals:
+                team1_id = str(participants[0].id) if participants else None
+                team2_id = str(participants[1].id) if len(participants) > 1 else None
+                
+                if team1_id and team2_id:
+                    team1_goals = match.goals.get(team1_id, 0)
+                    team2_goals = match.goals.get(team2_id, 0)
+                    
+                    if team1_goals > team2_goals:
+                        winner = 'team1'
+                    elif team2_goals > team1_goals:
+                        winner = 'team2'
+            
+            match_data.append({
+                'id': match.id,
+                'stage': match.stage,
+                'played': match.played,
+                'winner': winner,
+                'team1': {
+                    'id': participants[0].id,
+                    'name': str(participants[0])
+                } if participants else None,
+                'team2': {
+                    'id': participants[1].id,
+                    'name': str(participants[1])
+                } if len(participants) > 1 else None,
+                'placeholder_team1': f'Winner of M{match.player_slot_1.id}' if match.player_slot_1 else None,
+                'placeholder_team2': f'Winner of M{match.player_slot_2.id}' if match.player_slot_2 else None,
+                'goals': match.goals or {},
+                'team1_score': match.goals.get(str(participants[0].id), 0) if participants and match.goals else 0,
+                'team2_score': match.goals.get(str(participants[1].id), 0) if len(participants) > 1 and match.goals else 0
+            })
+
+        return Response(match_data, status=200)
 
 class KnockoutPreviewView(APIView):
     def get(self, request, tournament_id):

@@ -1,0 +1,186 @@
+[
+  {
+    "model": "league.player",
+    "pk": 1,
+    "fields": {
+      "display_name": "Lionel Messi",
+      "avatar": null
+    }
+  },
+  {
+    "model": "league.player",
+    "pk": 2,
+    "fields": {
+      "display_name": "Cristiano Ronaldo",
+      "avatar": null
+    }
+  },
+  {
+    "model": "league.player",
+    "pk": 3,
+    "fields": {
+      "display_name": "Neymar Jr",
+      "avatar": null
+    }
+  },
+  {
+    "model": "league.player",
+    "pk": 4,
+    "fields": {
+      "display_name": "Kevin De Bruyne",
+      "avatar": null
+    }
+  },
+  {
+    "model": "league.player",
+    "pk": 5,
+    "fields": {
+      "display_name": "Erling Haaland",
+      "avatar": null
+    }
+  },
+  {
+    "model": "league.player",
+    "pk": 6,
+    "fields": {
+      "display_name": "Kylian Mbappé",
+      "avatar": null
+    }
+  },
+  {
+    "model": "league.player",
+    "pk": 7,
+    "fields": {
+      "display_name": "Jude Bellingham",
+      "avatar": null
+    }
+  },
+  {
+    "model": "league.player",
+    "pk": 8,
+    "fields": {
+      "display_name": "Vinícius Jr",
+      "avatar": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 1,
+    "fields": {
+      "name": "Real Madrid",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 2,
+    "fields": {
+      "name": "Manchester City",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 3,
+    "fields": {
+      "name": "Barcelona",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 4,
+    "fields": {
+      "name": "Bayern Munich",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 5,
+    "fields": {
+      "name": "PSG",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 6,
+    "fields": {
+      "name": "Liverpool",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 7,
+    "fields": {
+      "name": "Manchester United",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 8,
+    "fields": {
+      "name": "Chelsea",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 9,
+    "fields": {
+      "name": "Arsenal",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 10,
+    "fields": {
+      "name": "Juventus",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 11,
+    "fields": {
+      "name": "AC Milan",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 12,
+    "fields": {
+      "name": "Inter Milan",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 13,
+    "fields": {
+      "name": "Atlético Madrid",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 14,
+    "fields": {
+      "name": "Borussia Dortmund",
+      "logo": null
+    }
+  },
+  {
+    "model": "league.gameteam",
+    "pk": 15,
+    "fields": {
+      "name": "Ajax",
+      "logo": null
+    }
+  }
+] 

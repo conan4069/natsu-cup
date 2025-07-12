@@ -231,17 +231,44 @@
     error.value = null
 
     try {
+      console.log('Cargando jugador con ID:', playerId)
+
       // Cargar datos del jugador
       const playerResponse = await playerAPI.getPlayer(playerId)
       player.value = playerResponse.data
+      console.log('Datos del jugador cargados:', player.value)
 
       // Cargar estadísticas del jugador
-      const statsResponse = await playerAPI.getPlayerStats(playerId)
-      stats.value = statsResponse.data
+      try {
+        const statsResponse = await playerAPI.getPlayerStats(playerId)
+        stats.value = statsResponse.data
+        console.log('Estadísticas del jugador cargadas:', stats.value)
+      } catch (statsError) {
+        console.error('Error al cargar estadísticas:', statsError)
+        // No fallar completamente si las estadísticas fallan
+        stats.value = {
+          total_tournaments: 0,
+          total_matches: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          win_rate: 0,
+          loss_rate: 0,
+          draw_rate: 0,
+          total_points: 0
+        }
+      }
 
       // Cargar torneos del jugador
-      const tournamentsResponse = await playerAPI.getPlayerTournaments(playerId)
-      recentTournaments.value = tournamentsResponse.data.tournaments
+      try {
+        const tournamentsResponse = await playerAPI.getPlayerTournaments(playerId)
+        recentTournaments.value = tournamentsResponse.data.tournaments
+        console.log('Torneos del jugador cargados:', recentTournaments.value)
+      } catch (tournamentsError) {
+        console.error('Error al cargar torneos:', tournamentsError)
+        // No fallar completamente si los torneos fallan
+        recentTournaments.value = []
+      }
     } catch (error_) {
       const errorInfo = handleApiError(error_)
       error.value = errorInfo.message

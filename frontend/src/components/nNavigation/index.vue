@@ -50,11 +50,6 @@
       icon: 'mdi-trophy-outline',
       href: '/tournaments',
     },
-    {
-      title: 'Brackets',
-      icon: 'mdi-tournament',
-      href: '/brackets',
-    },
   ])
 
   const { modelValue: drawer } = defineProps({

@@ -3,42 +3,43 @@
     <!-- Nombre del equipo -->
     <v-text-field
       v-model="form.name"
+      class="mb-4"
+      color="primary"
       label="Nombre del equipo"
       placeholder="Ej: Real Madrid"
-      variant="outlined"
-      :rules="nameRules"
-      required
       prepend-inner-icon="mdi-shield"
-      class="mb-4"
-      rounded="xl"
       :readonly="readonly || mode === 'view'"
+      required
+      rounded="xl"
+      :rules="nameRules"
+      variant="outlined"
     />
 
     <!-- Subida de logo -->
     <div
       v-if="!readonly && mode !== 'view'"
       class="mb-6 dropzone"
+      @click="triggerFileInput"
       @dragover.prevent
       @drop.prevent="onDrop"
-      @click="triggerFileInput"
     >
       <div class="dropzone-content">
-        <v-icon size="40" color="grey">mdi-cloud-upload</v-icon>
+        <v-icon color="grey" size="40">mdi-cloud-upload</v-icon>
         <span>Arrastra y suelta el logo aquí</span>
         <input
-          type="file"
+          ref="fileInput"
           accept="image/*"
           style="display: none"
+          type="file"
           @change="onFileChange"
-          ref="fileInput"
-        />
+        >
       </div>
     </div>
 
     <div v-if="logoPreview" class="mb-4" style="display: flex; flex-direction: column; align-items: center;">
       <p class="text-body-2 text-grey-darken-1 mb-2" style="text-align: center;">Logo actual</p>
       <v-avatar size="80">
-        <v-img :src="logoPreview" alt="Preview del logo" />
+        <v-img alt="Preview del logo" :src="logoPreview" />
       </v-avatar>
     </div>
 
@@ -52,142 +53,142 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
 
-// Props
-const props = defineProps({
-  team: {
-    type: Object,
-    default: null
-  },
-  mode: {
-    type: String,
-    default: 'create', // 'create' | 'edit' | 'view'
-    validator: value => ['create', 'edit', 'view'].includes(value)
-  },
-  readonly: {
-    type: Boolean,
-    default: false
+  // Props
+  const props = defineProps({
+    team: {
+      type: Object,
+      default: null,
+    },
+    mode: {
+      type: String,
+      default: 'create', // 'create' | 'edit' | 'view'
+      validator: value => ['create', 'edit', 'view'].includes(value),
+    },
+    readonly: {
+      type: Boolean,
+      default: false,
+    },
+  })
+
+  // Emits
+  const emit = defineEmits(['update:form', 'submit', 'valid-change'])
+
+  // Referencias
+  const formRef = ref(null)
+  const valid = ref(false)
+  const logoPreview = ref(null)
+  const fileInput = ref(null)
+
+  // Formulario reactivo
+  const form = ref({
+    name: '',
+    logo: null,
+  })
+
+  // Reglas de validación
+  const nameRules = [
+    v => !!v || 'El nombre es requerido',
+    v => v.length >= 2 || 'El nombre debe tener al menos 2 caracteres',
+    v => v.length <= 100 || 'El nombre no puede exceder 100 caracteres',
+  ]
+
+  // Computed para determinar si el formulario está en modo solo lectura
+  const isReadOnly = computed(() => props.mode === 'view')
+
+  // Preview del logo
+  watch(() => form.value.logo, file => {
+    if (file && file instanceof File) {
+      const reader = new FileReader()
+      reader.addEventListener('load', e => {
+        logoPreview.value = e.target.result
+      })
+      reader.readAsDataURL(file)
+    } else {
+      logoPreview.value = null
+    }
+  })
+
+  // Emitir cambios del formulario
+  watch(form, newForm => {
+    emit('update:form', newForm)
+  }, { deep: true })
+
+  // Emitir cambios de validación
+  watch(valid, newValid => {
+    emit('valid-change', newValid)
+  })
+
+  // Cargar datos del equipo si está en modo edición
+  onMounted(() => {
+    if (props.team && props.mode === 'edit') {
+      form.value = {
+        name: props.team.name || '',
+        logo: null,
+      }
+    }
+  })
+
+  // Métodos expuestos
+  const validate = () => {
+    return formRef.value?.validate()
   }
-})
 
-// Emits
-const emit = defineEmits(['update:form', 'submit', 'valid-change'])
-
-// Referencias
-const formRef = ref(null)
-const valid = ref(false)
-const logoPreview = ref(null)
-const fileInput = ref(null)
-
-// Formulario reactivo
-const form = ref({
-  name: '',
-  logo: null
-})
-
-// Reglas de validación
-const nameRules = [
-  v => !!v || 'El nombre es requerido',
-  v => v.length >= 2 || 'El nombre debe tener al menos 2 caracteres',
-  v => v.length <= 100 || 'El nombre no puede exceder 100 caracteres'
-]
-
-// Computed para determinar si el formulario está en modo solo lectura
-const isReadOnly = computed(() => props.mode === 'view')
-
-// Preview del logo
-watch(() => form.value.logo, file => {
-  if (file && file instanceof File) {
-    const reader = new FileReader()
-    reader.addEventListener('load', e => {
-      logoPreview.value = e.target.result
-    })
-    reader.readAsDataURL(file)
-  } else {
+  const reset = () => {
+    formRef.value?.reset()
+    form.value = {
+      name: '',
+      logo: null,
+    }
     logoPreview.value = null
   }
-})
 
-// Emitir cambios del formulario
-watch(form, (newForm) => {
-  emit('update:form', newForm)
-}, { deep: true })
+  const getFormData = () => {
+    const formData = new FormData()
+    formData.append('name', form.value.name)
+    if (form.value.logo) {
+      formData.append('logo', form.value.logo)
+    }
+    return formData
+  }
 
-// Emitir cambios de validación
-watch(valid, (newValid) => {
-  emit('valid-change', newValid)
-})
+  const triggerFileInput = () => {
+    fileInput.value && fileInput.value.click()
+  }
 
-// Cargar datos del equipo si está en modo edición
-onMounted(() => {
-  if (props.team && props.mode === 'edit') {
-    form.value = {
-      name: props.team.name || '',
-      logo: null
+  const onFileChange = event => {
+    const file = event.target.files[0]
+    if (file) {
+      form.value.logo = file
+      const reader = new FileReader()
+      reader.addEventListener('load', e => {
+        logoPreview.value = e.target.result
+      })
+      reader.readAsDataURL(file)
     }
   }
-})
 
-// Métodos expuestos
-const validate = () => {
-  return formRef.value?.validate()
-}
-
-const reset = () => {
-  formRef.value?.reset()
-  form.value = {
-    name: '',
-    logo: null
-  }
-  logoPreview.value = null
-}
-
-const getFormData = () => {
-  const formData = new FormData()
-  formData.append('name', form.value.name)
-  if (form.value.logo) {
-    formData.append('logo', form.value.logo)
-  }
-  return formData
-}
-
-const triggerFileInput = () => {
-  fileInput.value && fileInput.value.click()
-}
-
-const onFileChange = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    form.value.logo = file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      logoPreview.value = e.target.result
+  const onDrop = event => {
+    const file = event.dataTransfer.files[0]
+    if (file) {
+      form.value.logo = file
+      const reader = new FileReader()
+      reader.addEventListener('load', e => {
+        logoPreview.value = e.target.result
+      })
+      reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
   }
-}
 
-const onDrop = (event) => {
-  const file = event.dataTransfer.files[0]
-  if (file) {
-    form.value.logo = file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      logoPreview.value = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-// Exponer métodos
-defineExpose({
-  validate,
-  reset,
-  getFormData,
-  form: form.value,
-  valid
-})
+  // Exponer métodos
+  defineExpose({
+    validate,
+    reset,
+    getFormData,
+    form: form.value,
+    valid,
+  })
 </script>
 
 <style scoped>
@@ -215,4 +216,4 @@ defineExpose({
   align-items: center;
   justify-content: center;
 }
-</style> 
+</style>
