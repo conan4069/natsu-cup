@@ -11,9 +11,9 @@
             @click="goBack"
           />
           <div>
-            <h1 class="text-h4 font-weight-bold mb-2">Nuevo Jugador</h1>
+            <h1 class="text-h4 font-weight-bold mb-2">Nuevo Equipo</h1>
             <p class="text-body-1 text-grey-darken-1">
-              Agrega un nuevo jugador al formato de la Natsu Cup
+              Agrega un nuevo equipo al formato de la Natsu Cup
             </p>
           </div>
         </div>
@@ -25,12 +25,12 @@
       <v-col cols="12" lg="6" md="8">
         <v-card>
           <v-card-title class="text-h6 pa-6 pb-0">
-            Información del Jugador
+            Información del equipo
           </v-card-title>
 
           <v-card-text class="pa-6">
-            <PlayerForm
-              ref="playerFormRef"
+            <TeamForm
+              ref="teamFormRef"
               mode="create"
               @valid-change="handleValidChange"
             />
@@ -52,7 +52,7 @@
               :loading="saving"
               variant="elevated"
               rounded="xl"
-              @click="savePlayer"
+              @click="createTeam"
             >
               <v-icon start>mdi-content-save</v-icon>
               Guardar
@@ -67,20 +67,29 @@
 <script setup>
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import PlayerForm from '@/components/PlayerForm.vue'
-  import { handleApiError, playerAPI } from '@/services/api'
+  import TeamForm from '@/components/TeamForm.vue'
+  import { handleApiError, teamAPI } from '@/services/api'
 
   // Router
   const router = useRouter()
 
   // Referencias
-  const playerFormRef = ref(null)
+  const teamFormRef = ref(null)
   const formValid = ref(false)
   const saving = ref(false)
 
+  // Estado reactivo
+  const form = ref({
+    display_name: '',
+    avatar: null,
+    nickname: ''
+  })
+  const loading = ref(false)
+  const error = ref(null)
+
   // Navegación
   const goBack = () => {
-    router.push('/players')
+    router.push('/teams')
   }
 
   // Manejar cambios de validación
@@ -88,34 +97,24 @@
     formValid.value = valid
   }
 
-  // Guardar jugador
-  const savePlayer = async () => {
-    if (!formValid.value) return
-
-    saving.value = true
+  // Crear equipo
+  const createTeam = async () => {
+    loading.value = true
+    error.value = null
     try {
-      // Obtener FormData del formulario
-      const formData = playerFormRef.value.getFormData()
-
-      // Enviar a la API
-      await playerAPI.createPlayer(formData)
-
-      // Redirigir al listado con mensaje de éxito
-      router.push({
-        path: '/players',
-        query: {
-          success: 'true',
-          message: 'Jugador creado exitosamente',
-        },
-      })
-    } catch (error) {
-      const errorInfo = handleApiError(error)
-      console.error('Error al crear jugador:', errorInfo.message)
-
-    // Aquí podrías mostrar una notificación de error
-    // Por ejemplo, usando un snackbar o toast
+      const formData = new FormData()
+      formData.append('name', form.value.display_name)
+      if (form.value.avatar) {
+        formData.append('logo', form.value.avatar)
+      }
+      await teamAPI.createTeam(formData)
+      router.push('/teams')
+    } catch (error_) {
+      const errorInfo = handleApiError(error_)
+      error.value = errorInfo.message
+      console.error('Error al crear equipo:', errorInfo.message)
     } finally {
-      saving.value = false
+      loading.value = false
     }
   }
 </script>

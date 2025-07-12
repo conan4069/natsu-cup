@@ -5,9 +5,9 @@
       <v-col cols="12">
         <div class="d-flex align-center justify-space-between">
           <div>
-            <h1 class="text-h4 font-weight-bold mb-2">Jugadores</h1>
+            <h1 class="text-h4 font-weight-bold mb-2">Equipos</h1>
             <p class="text-body-1 text-grey-darken-1">
-              Gestiona los jugadores del campeonato Natsu Cup
+              Gestiona los equipos del campeonato Natsu Cup
             </p>
           </div>
           <v-btn
@@ -17,7 +17,7 @@
             rounded="xl"
             @click="navigateToCreate"
           >
-            Nuevo Jugador
+            Nuevo Equipo
           </v-btn>
         </div>
       </v-col>
@@ -30,13 +30,13 @@
           v-model="searchQuery"
           density="comfortable"
           hide-details
-          placeholder="Buscar jugadores..."
+          placeholder="Buscar equipos..."
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           rounded="xl"
           color="primary"
           bg-color="white"
-          @input="filterPlayers"
+          @input="filterTeams"
         />
       </v-col>
       <v-col class="d-flex justify-end" cols="12" md="6">
@@ -47,38 +47,38 @@
           rounded="xl"
           size="large"
           class="pt-3 pb-4 "
-          color="secondary"
-          @click="loadPlayers"
+          color="primary"
+          @click="loadTeams"
         >
           Actualizar
         </v-btn>
       </v-col>
     </v-row>
 
-    <!-- Tabla de jugadores -->
+    <!-- Tabla de equipos -->
     <v-card rounded="xl">
       <v-data-table
         class="elevation-1"
         :headers="headers"
-        :items="filteredPlayers"
+        :items="filteredTeams"
         :items-per-page="10"
         :loading="loading"
       >
-        <!-- Avatar del jugador -->
+        <!-- imagen del equipo -->
         <template #item.avatar="{ item }">
           <v-avatar class="mr-3" size="48">
             <v-img
               v-if="item.avatar"
-              alt="Avatar del jugador"
+              alt="Avatar del equipo"
               :src="item.avatar"
             />
             <v-icon v-else color="grey" size="24">
-              mdi-account
+              mdi-account-group
             </v-icon>
           </v-avatar>
         </template>
 
-        <!-- Nombre del jugador -->
+        <!-- Nombre del equipo -->
         <template #item.display_name="{ item }">
           <div class="d-flex align-center">
             <div>
@@ -96,7 +96,7 @@
               size="medium"
               title="Ver detalles"
               variant="text"
-              @click="viewPlayer(item)"
+              @click="viewTeam(item)"
             />
             <v-btn
               color="warning"
@@ -104,7 +104,7 @@
               size="medium"
               title="Editar"
               variant="text"
-              @click="editPlayer(item)"
+              @click="editTeam(item)"
             />
             <v-btn
               color="error"
@@ -124,10 +124,10 @@
               mdi-account-group
             </v-icon>
             <h3 class="text-h6 text-grey-darken-1 mb-2">
-              No hay jugadores registrados
+              No hay equipos registrados
             </h3>
             <p class="text-body-2 text-grey-darken-1 mb-4">
-              Comienza agregando el primer jugador al campeonato
+              Comienza agregando el primer equipo al campeonato
             </p>
             <v-btn
               color="primary"
@@ -136,7 +136,7 @@
               rounded="xl"
               @click="navigateToCreate"
             >
-              Agregar Jugador
+              Agregar Equipo
             </v-btn>
           </div>
         </template>
@@ -150,8 +150,8 @@
           Confirmar eliminación
         </v-card-title>
         <v-card-text>
-          ¿Estás seguro de que quieres eliminar al jugador
-          <strong>{{ playerToDelete?.display_name }}</strong>?
+          ¿Estás seguro de que quieres eliminar al equipo
+          <strong>{{ teamToDelete?.display_name }}</strong>?
           Esta acción no se puede deshacer.
         </v-card-text>
         <v-card-actions>
@@ -168,7 +168,7 @@
             :loading="deleting"
             variant="elevated"
             rounded="xl"
-            @click="deletePlayer"
+            @click="deleteTeam"
           >
             Eliminar
           </v-btn>
@@ -181,97 +181,89 @@
 <script setup>
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { handleApiError, playerAPI } from '@/services/api'
+  import { handleApiError, teamAPI } from '@/services/api'
 
   // Router
   const router = useRouter()
 
   // Estado reactivo
-  const players = ref([])
+  const teams = ref([])
   const loading = ref(false)
   const searchQuery = ref('')
   const deleteDialog = ref(false)
-  const playerToDelete = ref(null)
+  const teamToDelete = ref(null)
   const deleting = ref(false)
 
   // Headers de la tabla
   const headers = [
-    { title: 'Avatar', key: 'avatar', sortable: false },
-    { title: 'Jugador', key: 'display_name', sortable: true },
-    { title: 'Acciones', key: 'actions', sortable: false},
+    { title: 'Logo', key: 'avatar', sortable: false },
+    { title: 'Equipo', key: 'display_name', sortable: true },
+    { title: 'Acciones', key: 'actions', sortable: false, align: 'end' },
   ]
 
-  // Computed para filtrar jugadores
-  const filteredPlayers = computed(() => {
-    if (!searchQuery.value) return players.value
-
+  // Computed para filtrar equipos
+  const filteredTeams = computed(() => {
+    if (!searchQuery.value) return teams.value
     const query = searchQuery.value.toLowerCase()
-    return players.value.filter(player =>
-      player.display_name.toLowerCase().includes(query)
-      || player.id.toString().includes(query),
+    return teams.value.filter(team =>
+      team.display_name.toLowerCase().includes(query)
+      || team.id.toString().includes(query),
     )
   })
 
-  // Cargar jugadores
-  const loadPlayers = async () => {
+  // Cargar equipos
+  const loadTeams = async () => {
     loading.value = true
     try {
-      const response = await playerAPI.getPlayers()
-      players.value = response.data
+      const response = await teamAPI.getTeams()
+      teams.value = response.data
     } catch (error) {
       const errorInfo = handleApiError(error)
-      console.error('Error al cargar jugadores:', errorInfo.message)
-    // Aquí podrías mostrar una notificación de error
+      console.error('Error al cargar equipos:', errorInfo.message)
     } finally {
       loading.value = false
     }
   }
 
-  // Filtrar jugadores
-  const filterPlayers = () => {
-  // La función se ejecuta automáticamente por el computed
+  // Filtrar equipos
+  const filterTeams = () => {
+    // La función se ejecuta automáticamente por el computed
   }
 
   // Navegación
   const navigateToCreate = () => {
-    router.push('/players/create')
+    router.push('/teams/create')
   }
 
-  const viewPlayer = player => {
-    router.push(`/players/${player.id}`)
+  const viewTeam = team => {
+    router.push(`/teams/${team.id}`)
   }
 
-  const editPlayer = player => {
-    router.push(`/players/${player.id}/edit`)
+  const editTeam = team => {
+    router.push(`/teams/${team.id}/edit`)
   }
 
   // Eliminación
-  const confirmDelete = player => {
-    playerToDelete.value = player
+  const confirmDelete = team => {
+    teamToDelete.value = team
     deleteDialog.value = true
   }
 
-  const deletePlayer = async () => {
-    if (!playerToDelete.value) return
-
+  const deleteTeam = async () => {
+    if (!teamToDelete.value) return
     deleting.value = true
     try {
-      await playerAPI.deletePlayer(playerToDelete.value.id)
-
+      await teamAPI.deleteTeam(teamToDelete.value.id)
       // Remover de la lista local
-      const index = players.value.findIndex(p => p.id === playerToDelete.value.id)
+      const index = teams.value.findIndex(t => t.id === teamToDelete.value.id)
       if (index !== -1) {
-        players.value.splice(index, 1)
+        teams.value.splice(index, 1)
       }
-
       deleteDialog.value = false
-      playerToDelete.value = null
-
-    // Aquí podrías mostrar una notificación de éxito
+      teamToDelete.value = null
     } catch (error) {
       const errorInfo = handleApiError(error)
-      console.error('Error al eliminar jugador:', errorInfo.message)
-    // Aquí podrías mostrar una notificación de error
+      console.error('Error al eliminar equipo:', errorInfo.message)
     } finally {
       deleting.value = false
     }
@@ -279,7 +271,7 @@
 
   // Cargar datos al montar el componente
   onMounted(() => {
-    loadPlayers()
+    loadTeams()
   })
 </script>
 

@@ -1,19 +1,21 @@
 <template>
   <!-- Barra de navegación -->
   <template v-if="!isFullScreenRoute">
-    <v-app-bar app color="primary" dark elevation="2">
+    <v-app-bar app color="white" dark elevation="2">
       <template #prepend>
         <v-app-bar-nav-icon v-if="mobile" @click="drawer = !drawer" />
       </template>
-      <v-app-bar-title class="d-flex align-center">
-        <v-icon class="mr-2">mdi-trophy</v-icon>
-        Natsu Cup
+      <v-app-bar-title class="d-flex justify-center align-center">
+        <!-- <v-icon class="mr-2">mdi-trophy</v-icon>
+        Natsu Cup -->
+        <v-avatar size="54">
+          <v-img :src="LogoCup" width="150" height="150" class="mr-2" style="border-radius: 50%;" />
+        </v-avatar>
+        <span class="text-h5 font-weight-bold">Natsu Cup</span>
       </v-app-bar-title>
-
-      <v-spacer />
     </v-app-bar>
-    <n-navigation v-model="drawer" />
   </template>
+  <n-navigation v-model="drawer" />
 
   <!-- Contenido principal -->
   <v-main>
@@ -37,13 +39,13 @@
 <script setup>
   import { useRoute } from 'vue-router'
   import { useDisplay } from 'vuetify'
-
+  import LogoCup from '@/assets/LogoCup.png'
   const { mobile } = useDisplay()
   const drawer = ref(true)
   const route = useRoute()
 
   // Lista de rutas donde solo quieres mostrar el router-view
-  const fullScreenRoutes = new Set(['/auth/login', '/auth/register', '/auth/forgot'])
+  const fullScreenRoutes = new Set(['/'])
 
   const isFullScreenRoute = computed(() => fullScreenRoutes.has(route.path))
 

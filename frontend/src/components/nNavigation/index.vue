@@ -1,7 +1,6 @@
 <template>
   <v-navigation-drawer
     app
-    color="#dedee5"
     expand-on-hover
     :model-value="drawer"
     :rail="true && !mobile"
@@ -37,6 +36,16 @@
       href: '/',
     },
     {
+      title: 'Jugadores',
+      icon: 'mdi-account-details',
+      href: '/players',
+    },
+    {
+      title: 'Equipos',
+      icon: 'mdi-account-group',
+      href: '/teams',
+    },
+    {
       title: 'Torneos',
       icon: 'mdi-trophy-outline',
       href: '/tournaments',
@@ -45,11 +54,6 @@
       title: 'Brackets',
       icon: 'mdi-tournament',
       href: '/brackets',
-    },
-    {
-      title: 'Jugadores',
-      icon: 'mdi-account-group',
-      href: '/players',
     },
   ])
 

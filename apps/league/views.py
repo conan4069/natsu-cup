@@ -199,8 +199,12 @@ class PlayerTournamentsView(views.APIView):
             'total_tournaments': len(tournaments)
         })
 
-# 🛡️ Equipos del juego
-class GameTeamListView(generics.ListAPIView):
+# ��️ Equipos del juego CRUD
+class GameTeamListCreateView(generics.ListCreateAPIView):
+    queryset = GameTeam.objects.all()
+    serializer_class = GameTeamSerializer
+
+class GameTeamDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GameTeam.objects.all()
     serializer_class = GameTeamSerializer
 

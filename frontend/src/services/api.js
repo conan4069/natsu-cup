@@ -72,5 +72,29 @@ export const gameTeamAPI = {
   getGameTeams: () => api.get('/teams/'),
 }
 
+// Funciones de API para equipos
+export const teamAPI = {
+  // Listar equipos
+  getTeams: () => api.get('/teams/'),
+
+  // Crear equipo
+  createTeam: data => api.post('/teams/', data),
+
+  // Obtener equipo específico
+  getTeam: teamId => api.get(`/teams/${teamId}/`),
+
+  // Actualizar equipo
+  updateTeam: (teamId, data) => api.put(`/teams/${teamId}/`, data),
+
+  // Eliminar equipo
+  deleteTeam: teamId => api.delete(`/teams/${teamId}/`),
+
+  // Obtener estadísticas del equipo (si aplica)
+  getTeamStats: teamId => api.get(`/teams/${teamId}/stats/`),
+
+  // Obtener torneos del equipo (si aplica)
+  getTeamTournaments: teamId => api.get(`/teams/${teamId}/tournaments/`),
+}
+
 // Exportar la función de manejo de errores para uso en componentes
 export { handleApiError }

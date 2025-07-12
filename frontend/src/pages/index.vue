@@ -3,18 +3,17 @@
   <!-- Hero Section -->
   <v-parallax src="@/assets/fondocesped.jpg">
     <v-row no-gutters>
-      <v-col cols="12" class="d-flex align-center justify-center">
+      <v-col cols="12" class="d-flex justify-center">
         <div class="text-center" style="transform: translateX(-4%);">
-          <h1 class="text-h1 font-weight-bold text-white ml-10" style="padding-top: 100px;">
-            Natsu Cup
-          </h1>
+          <v-img src="@/assets/LogoCup.png" width="600" class="mb-16" style="transform: translateX(6.4%);"></v-img>
           <v-icon size="120" color="primary" class="mb-16" style="padding-bottom: 700px;"></v-icon>
           <v-btn
             prepend-icon="mdi-account" stacked
             size="x-large"
             color="primary"
             variant="elevated"
-            class="px-5 mt-4 mr-16"
+            class="px-5 mr-11"
+            style="transform: translateY(-175%);"
             rounded="xl"
             @click="navigateToTournaments"
           > 
@@ -25,204 +24,6 @@
     </v-row>
   </v-parallax>
 
-    <!-- Features Section -->
-    <v-row class="py-16 px-12">
-      <v-col cols="12" class="text-center mb-12">
-        <h2 class="text-h3 font-weight-bold mb-4">
-          ¿Por qué Natsu Cup?
-        </h2>
-        <p class="text-h6 text-medium-emphasis">
-          La plataforma definitiva para organizar torneos de FIFA con tus amigos
-        </p>
-      </v-col>
-
-      <v-col cols="12" md="4" class="text-center pa-6">
-        <v-card class="h-100 pa-6" elevation="2">
-          <v-icon size="64" color="primary" class="mb-4">groups</v-icon>
-          <h3 class="text-h5 font-weight-bold mb-3">Torneos con Amigos</h3>
-          <p class="text-body-1 text-medium-emphasis">
-            Organiza torneos privados con tu grupo de amigos.
-            Compite, ríete y celebra juntos.
-          </p>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="4" class="text-center pa-6">
-        <v-card class="h-100 pa-6" elevation="2">
-          <v-icon size="64" color="primary" class="mb-4">schedule</v-icon>
-          <h3 class="text-h5 font-weight-bold mb-3">Fácil Organización</h3>
-          <p class="text-body-1 text-medium-emphasis">
-            Crea brackets automáticos, programa partidas y
-            mantén un seguimiento en tiempo real.
-          </p>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="4" class="text-center pa-6">
-        <v-card class="h-100 pa-6" elevation="2">
-          <v-icon size="64" color="primary" class="mb-4">analytics</v-icon>
-          <h3 class="text-h5 font-weight-bold mb-3">Estadísticas Detalladas</h3>
-          <p class="text-body-1 text-medium-emphasis">
-            Revisa tu historial, estadísticas y
-            evolución como jugador de FIFA.
-          </p>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <!-- Active Tournaments Section -->
-    <v-row class="py-16 px-4 bg-grey-lighten-4">
-      <v-col cols="12" class="text-center mb-8">
-        <h2 class="text-h3 font-weight-bold mb-4">
-          Torneos Activos
-        </h2>
-        <p class="text-h6 text-medium-emphasis">
-          Únete a los torneos en curso o crea uno nuevo
-        </p>
-      </v-col>
-
-      <v-col cols="12" md="6" lg="4" v-for="tournament in activeTournaments" :key="tournament.id">
-        <v-card class="h-100" elevation="3">
-          <v-img
-            :src="tournament.image"
-            height="200"
-            cover
-            class="bg-grey-darken-2"
-          >
-            <div class="d-flex fill-height align-end">
-              <div class="pa-4 text-white">
-                <div class="d-flex align-center mb-2">
-                  <v-chip
-                    :color="tournament.status === 'active' ? 'success' : 'warning'"
-                    size="small"
-                    class="mr-2"
-                  >
-                    {{ tournament.status === 'active' ? 'Activo' : 'Próximo' }}
-                  </v-chip>
-                  <v-icon size="16" color="white">people</v-icon>
-                  <span class="ml-1 text-caption">{{ tournament.participants }}/{{ tournament.maxParticipants }}</span>
-                </div>
-              </div>
-            </div>
-          </v-img>
-
-          <v-card-title class="text-h6">
-            {{ tournament.name }}
-          </v-card-title>
-
-          <v-card-text>
-            <p class="text-body-2 text-medium-emphasis mb-3">
-              {{ tournament.description }}
-            </p>
-            <div class="d-flex align-center justify-space-between">
-              <div class="d-flex align-center">
-                <v-icon size="16" color="primary" class="mr-1">event</v-icon>
-                <span class="text-caption">{{ tournament.date }}</span>
-              </div>
-              <div class="d-flex align-center">
-                <v-icon size="16" color="primary" class="mr-1">emoji_events</v-icon>
-                <span class="text-caption">{{ tournament.prize }}</span>
-              </div>
-            </div>
-          </v-card-text>
-
-          <v-card-actions>
-            <v-btn
-              color="primary"
-              variant="outlined"
-              size="small"
-              @click="joinTournament(tournament.id)"
-            >
-              Unirse
-            </v-btn>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="primary"
-              variant="text"
-              size="small"
-              @click="viewTournament(tournament.id)"
-            >
-              Ver Detalles
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" class="text-center mt-8">
-        <v-btn
-          color="primary"
-          size="large"
-          variant="elevated"
-          @click="createTournament"
-        >
-          <v-icon start>add</v-icon>
-          Crear Nuevo Torneo
-        </v-btn>
-      </v-col>
-    </v-row>
-
-    <!-- Stats Section -->
-    <v-row class="py-16 px-4">
-      <v-col cols="12" class="text-center mb-8">
-        <h2 class="text-h3 font-weight-bold mb-4">
-          Natsu Cup en Números
-        </h2>
-      </v-col>
-
-      <v-col cols="12" md="3" class="text-center">
-        <div class="stat-card">
-          <v-icon size="48" color="primary" class="mb-4">emoji_events</v-icon>
-          <h3 class="text-h4 font-weight-bold text-primary mb-2">150+</h3>
-          <p class="text-body-1 text-medium-emphasis">Torneos Completados</p>
-        </div>
-      </v-col>
-
-      <v-col cols="12" md="3" class="text-center">
-        <div class="stat-card">
-          <v-icon size="48" color="primary" class="mb-4">people</v-icon>
-          <h3 class="text-h4 font-weight-bold text-primary mb-2">500+</h3>
-          <p class="text-body-1 text-medium-emphasis">Jugadores Registrados</p>
-        </div>
-      </v-col>
-
-      <v-col cols="12" md="3" class="text-center">
-        <div class="stat-card">
-          <v-icon size="48" color="primary" class="mb-4">sports_soccer</v-icon>
-          <h3 class="text-h4 font-weight-bold text-primary mb-2">2,500+</h3>
-          <p class="text-body-1 text-medium-emphasis">Partidas Jugadas</p>
-        </div>
-      </v-col>
-
-      <v-col cols="12" md="3" class="text-center">
-        <div class="stat-card">
-          <v-icon size="48" color="primary" class="mb-4">favorite</v-icon>
-          <h3 class="text-h4 font-weight-bold text-primary mb-2">98%</h3>
-          <p class="text-body-1 text-medium-emphasis">Satisfacción</p>
-        </div>
-      </v-col>
-    </v-row>
-
-    <!-- CTA Section -->
-    <v-row class="py-16 px-4 bg-primary">
-      <v-col cols="12" class="text-center">
-        <h2 class="text-h3 font-weight-bold text-white mb-4">
-          ¿Listo para la Competencia?
-        </h2>
-        <p class="text-h6 text-white mb-8">
-          Únete a Natsu Cup y demuestra que eres el mejor jugador de FIFA
-        </p>
-        <v-btn
-          size="x-large"
-          color="white"
-          variant="elevated"
-          class="px-8 text-primary"
-          @click="getStarted"
-        >
-          <v-icon start>rocket_launch</v-icon>
-          Comenzar Ahora
-        </v-btn>
-      </v-col>
-    </v-row>
   </v-container>
 </template>
 

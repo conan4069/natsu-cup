@@ -1,22 +1,20 @@
 <template>
   <v-form ref="formRef" v-model="valid">
-    <!-- Nombre del jugador -->
+    <!-- Nombre del equipo -->
     <v-text-field
-      v-model="form.display_name"
-      label="Nombre del jugador"
-      placeholder="Ej: Eliezer Hijo Mio"
+      v-model="form.name"
+      label="Nombre del equipo"
+      placeholder="Ej: Real Madrid"
       variant="outlined"
       :rules="nameRules"
       required
-      prepend-inner-icon="mdi-account"
+      prepend-inner-icon="mdi-shield"
       class="mb-4"
       rounded="xl"
       :readonly="readonly || mode === 'view'"
     />
 
-    <!-- Avatar actual (solo en modo edición) -->
-  
-    <!-- Subida de avatar -->
+    <!-- Subida de logo -->
     <div
       v-if="!readonly && mode !== 'view'"
       class="mb-6 dropzone"
@@ -26,7 +24,7 @@
     >
       <div class="dropzone-content">
         <v-icon size="40" color="grey">mdi-cloud-upload</v-icon>
-        <span>Arrastra y suelta la imagen aquí</span>
+        <span>Arrastra y suelta el logo aquí</span>
         <input
           type="file"
           accept="image/*"
@@ -37,21 +35,19 @@
       </div>
     </div>
 
-    <div v-if="avatarPreview" class="mb-4" style="display: flex; flex-direction: column; align-items: center;">
-      <p class="text-body-2 text-grey-darken-1 mb-2" style="text-align: center;">Avatar actual</p>
+    <div v-if="logoPreview" class="mb-4" style="display: flex; flex-direction: column; align-items: center;">
+      <p class="text-body-2 text-grey-darken-1 mb-2" style="text-align: center;">Logo actual</p>
       <v-avatar size="80">
-        <v-img :src="avatarPreview" alt="Preview del avatar" />
+        <v-img :src="logoPreview" alt="Preview del logo" />
       </v-avatar>
     </div>
 
-    <div v-if="mode === 'edit' && player?.avatar" class="mb-4 avatar-centrado">
-      <p class="text-body-2 text-grey-darken-1 mb-2">Avatar actual:</p>
+    <div v-if="mode === 'edit' && team?.logo" class="mb-4 avatar-centrado">
+      <p class="text-body-2 text-grey-darken-1 mb-2">Logo actual:</p>
       <v-avatar class="mb-3" size="80">
-        <v-img alt="Avatar actual" :src="player.avatar" />
+        <v-img alt="Logo actual" :src="team.logo" />
       </v-avatar>
     </div>
-    
-    <!-- Información adicional -->
   </v-form>
 </template>
 
@@ -60,7 +56,7 @@ import { ref, watch, computed, onMounted } from 'vue'
 
 // Props
 const props = defineProps({
-  player: {
+  team: {
     type: Object,
     default: null
   },
@@ -81,14 +77,13 @@ const emit = defineEmits(['update:form', 'submit', 'valid-change'])
 // Referencias
 const formRef = ref(null)
 const valid = ref(false)
-const avatarPreview = ref(null)
+const logoPreview = ref(null)
 const fileInput = ref(null)
 
 // Formulario reactivo
 const form = ref({
-  display_name: '',
-  avatar: null,
-  nickname: ''
+  name: '',
+  logo: null
 })
 
 // Reglas de validación
@@ -98,23 +93,19 @@ const nameRules = [
   v => v.length <= 100 || 'El nombre no puede exceder 100 caracteres'
 ]
 
-const avatarRules = [
-  v => !v || v.size <= 5 * 1024 * 1024 || 'El archivo no puede exceder 5MB'
-]
-
 // Computed para determinar si el formulario está en modo solo lectura
 const isReadOnly = computed(() => props.mode === 'view')
 
-// Preview del avatar
-watch(() => form.value.avatar, file => {
+// Preview del logo
+watch(() => form.value.logo, file => {
   if (file && file instanceof File) {
     const reader = new FileReader()
     reader.addEventListener('load', e => {
-      avatarPreview.value = e.target.result
+      logoPreview.value = e.target.result
     })
     reader.readAsDataURL(file)
   } else {
-    avatarPreview.value = null
+    logoPreview.value = null
   }
 })
 
@@ -128,13 +119,12 @@ watch(valid, (newValid) => {
   emit('valid-change', newValid)
 })
 
-// Cargar datos del jugador si está en modo edición
+// Cargar datos del equipo si está en modo edición
 onMounted(() => {
-  if (props.player && props.mode === 'edit') {
+  if (props.team && props.mode === 'edit') {
     form.value = {
-      display_name: props.player.display_name || '',
-      avatar: null,
-      nickname: props.player.nickname || ''
+      name: props.team.name || '',
+      logo: null
     }
   }
 })
@@ -147,25 +137,18 @@ const validate = () => {
 const reset = () => {
   formRef.value?.reset()
   form.value = {
-    display_name: '',
-    avatar: null,
-    nickname: ''
+    name: '',
+    logo: null
   }
-  avatarPreview.value = null
+  logoPreview.value = null
 }
 
 const getFormData = () => {
   const formData = new FormData()
-  formData.append('display_name', form.value.display_name)
-
-  if (form.value.avatar) {
-    formData.append('avatar', form.value.avatar)
+  formData.append('name', form.value.name)
+  if (form.value.logo) {
+    formData.append('logo', form.value.logo)
   }
-
-  if (form.value.nickname) {
-    formData.append('nickname', form.value.nickname)
-  }
-
   return formData
 }
 
@@ -176,10 +159,10 @@ const triggerFileInput = () => {
 const onFileChange = (event) => {
   const file = event.target.files[0]
   if (file) {
-    form.value.avatar = file
+    form.value.logo = file
     const reader = new FileReader()
     reader.onload = (e) => {
-      avatarPreview.value = e.target.result
+      logoPreview.value = e.target.result
     }
     reader.readAsDataURL(file)
   }
@@ -188,10 +171,10 @@ const onFileChange = (event) => {
 const onDrop = (event) => {
   const file = event.dataTransfer.files[0]
   if (file) {
-    form.value.avatar = file
+    form.value.logo = file
     const reader = new FileReader()
     reader.onload = (e) => {
-      avatarPreview.value = e.target.result
+      logoPreview.value = e.target.result
     }
     reader.readAsDataURL(file)
   }
@@ -208,7 +191,6 @@ defineExpose({
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
 .dropzone {
   border: 2px dashed #ccc;
   border-radius: 8px;
@@ -233,4 +215,4 @@ defineExpose({
   align-items: center;
   justify-content: center;
 }
-</style>
+</style> 

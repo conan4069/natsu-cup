@@ -36,7 +36,8 @@ urlpatterns = [
     path('players/<int:pk>/', views.PlayerDetailView.as_view()),
     path('players/<int:player_id>/stats/', views.PlayerStatsView.as_view()),
     path('players/<int:player_id>/tournaments/', views.PlayerTournamentsView.as_view()),
-    path('teams/', views.GameTeamListView.as_view()),
+    path('teams/', views.GameTeamListCreateView.as_view()),
+    path('teams/<int:pk>/', views.GameTeamDetailView.as_view()),
     # urls.py
 
 ]
