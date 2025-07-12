@@ -25,16 +25,19 @@
 
   <!-- Contenido principal -->
   <v-main>
-    <v-container class="pa-0" fluid>
+    <v-parallax src="@/assets/fondocesped.jpg">
+      <v-container class="pa-0" fluid>
       <!-- Slot para el contenido de las rutas -->
       <router-view />
-    </v-container>
+      </v-container>
+    </v-parallax>
+    
     <!-- Footer (opcional) -->
   </v-main>
-  <v-footer app class="py-3" color="grey-lighten-3">
+  <v-footer class="py-1" color="#f3f2e5">
     <v-row align="center" justify="center">
       <v-col class="text-center" cols="12">
-        <span class="text-caption text-grey-darken-1">
+        <span class="text-caption text-grey-darken-3">
           © 2025 Natsu Cup. Todos los derechos reservados.
         </span>
       </v-col>

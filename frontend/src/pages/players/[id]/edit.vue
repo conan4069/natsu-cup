@@ -23,11 +23,12 @@
               class="mr-4"
               icon="mdi-arrow-left"
               variant="text"
+              color="white"
               @click="goBack"
             />
             <div>
-              <h1 class="text-h4 font-weight-bold mb-2">Editar Jugador</h1>
-              <p class="text-body-1 text-grey-darken-1">
+              <h1 class="text-h4 font-weight-bold mb-2" style="color: #f3f2e5;">Editar Jugador</h1>
+              <p class="text-body-1" style="color: #deddd6;">
                 Modifica la información de {{ player.display_name }}
               </p>
             </div>
@@ -66,6 +67,7 @@
                 color="error"
                 :loading="deleting"
                 variant="outlined"
+                rounded="xl"
                 @click="confirmDelete"
               >
                 <v-icon start>mdi-delete</v-icon>
@@ -76,10 +78,11 @@
                 :disabled="!formValid"
                 :loading="saving"
                 variant="elevated"
+                rounded="xl"
                 @click="savePlayer"
               >
                 <v-icon start>mdi-content-save</v-icon>
-                Guardar Cambios
+                Guardar
               </v-btn>
             </v-card-actions>
           </v-card>

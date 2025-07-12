@@ -5,8 +5,8 @@
       <v-col cols="12">
         <div class="d-flex align-center justify-space-between">
           <div>
-            <h1 class="text-h4 font-weight-bold mb-2">Jugadores</h1>
-            <p class="text-body-1 text-grey-darken-1">
+            <h1 class="text-h4 font-weight-bold mb-2" style="color: #f3f2e5;">Jugadores</h1>
+            <p class="text-body-1" style="color: #deddd6;">
               Gestiona los jugadores del campeonato Natsu Cup
             </p>
           </div>
@@ -43,11 +43,11 @@
         <v-btn
           :loading="loading"
           prepend-icon="mdi-refresh"
-          variant="outlined"
+          variant="elevated"
           rounded="xl"
           size="large"
-          class="pt-3 pb-4 "
-          color="secondary"
+          class="pt-3 pb-4"
+          color="primary"
           @click="loadPlayers"
         >
           Actualizar
