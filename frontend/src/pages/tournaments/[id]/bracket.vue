@@ -236,7 +236,8 @@
   const loadMatches = async tournamentId => {
     try {
       const matchesResponse = await matchAPI.getTournamentMatches(tournamentId)
-      matches.value = matchesResponse.data
+      // Asegurar que matches sea siempre un array
+      matches.value = matchesResponse.data?.matches || matchesResponse.data || []
       console.log('Partidos del torneo cargados:', matches.value)
     } catch (error_) {
       console.error('Error al cargar partidos:', error_)

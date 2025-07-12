@@ -186,9 +186,12 @@
 
   // Computed
   const stats = computed(() => {
+    // Asegurar que matches.value sea un array
+    const matchesArray = Array.isArray(matches.value) ? matches.value : []
+
     const totalTeams = teamEntries.value.length
-    const totalMatches = matches.value.filter(m => m.played).length
-    const totalGoals = matches.value.reduce((total, m) => {
+    const totalMatches = matchesArray.filter(m => m.played).length
+    const totalGoals = matchesArray.reduce((total, m) => {
       if (m.played && m.goals) {
         return total + Object.values(m.goals).reduce((sum, goals) => sum + goals, 0)
       }
@@ -207,7 +210,10 @@
   const teamStandings = computed(() => {
     const standings = []
 
-    for (const entry of teamEntries.value) {
+    // Asegurar que teamEntries.value sea un array
+    const entriesArray = Array.isArray(teamEntries.value) ? teamEntries.value : []
+
+    for (const entry of entriesArray) {
       if (!entry.assigned_team) continue
 
       const teamStats = {
@@ -247,7 +253,8 @@
       // Cargar partidos del torneo
       try {
         const matchesResponse = await matchAPI.getTournamentMatches(tournamentId)
-        matches.value = matchesResponse.data
+        // Asegurar que matches sea siempre un array
+        matches.value = matchesResponse.data?.matches || matchesResponse.data || []
         console.log('Partidos del torneo cargados:', matches.value)
       } catch (matchesError) {
         console.error('Error al cargar partidos:', matchesError)
@@ -257,7 +264,7 @@
       // Cargar entradas de equipos
       try {
         const entriesResponse = await tournamentAPI.getTeamEntries(tournamentId)
-        teamEntries.value = entriesResponse.data
+        teamEntries.value = entriesResponse.data || []
         console.log('Entradas de equipos cargadas:', teamEntries.value)
       } catch (entriesError) {
         console.error('Error al cargar entradas:', entriesError)

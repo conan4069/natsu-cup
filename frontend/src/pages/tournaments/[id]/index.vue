@@ -55,91 +55,6 @@
         </v-col>
       </v-row>
 
-      <!-- Tournament info -->
-      <v-row>
-        <v-col cols="12" md="8">
-          <v-card>
-            <v-card-title class="text-h6">
-              <v-icon start>mdi-information</v-icon>
-              Información del Torneo
-            </v-card-title>
-            <v-card-text>
-              <v-row>
-                <v-col cols="6">
-                  <div class="mb-3">
-                    <span class="text-body-2 text-grey-darken-1">Formato:</span>
-                    <div class="font-weight-medium">{{ tournament.format }}</div>
-                  </div>
-                  <div class="mb-3">
-                    <span class="text-body-2 text-grey-darken-1">Equipos:</span>
-                    <div class="font-weight-medium">{{ tournament.team_count || tournament.total_teams || 0 }}</div>
-                  </div>
-                  <div class="mb-3">
-                    <span class="text-body-2 text-grey-darken-1">Estado:</span>
-                    <div>
-                      <v-chip
-                        :color="getStatusColor(tournament.status)"
-                        size="small"
-                        variant="outlined"
-                      >
-                        {{ getStatusText(tournament.status) }}
-                      </v-chip>
-                    </div>
-                  </div>
-                  <div class="mb-3">
-                    <span class="text-body-2 text-grey-darken-1">Fecha de creación:</span>
-                    <div class="font-weight-medium">
-                      {{ tournament.created_at ? new Date(tournament.created_at).toLocaleDateString() : 'N/A' }}
-                    </div>
-                  </div>
-                </v-col>
-                <v-col cols="6">
-                  <div class="mb-3">
-                    <span class="text-body-2 text-grey-darken-1">Tipo de competición:</span>
-                    <div class="font-weight-medium">{{ getCompetitionTypeText(tournament.competition_type) }}</div>
-                  </div>
-                  <div v-if="tournament.has_group_stage" class="mb-3">
-                    <span class="text-body-2 text-grey-darken-1">Equipos por grupo:</span>
-                    <div class="font-weight-medium">{{ tournament.teams_per_group }}</div>
-                  </div>
-                  <div v-if="tournament.league_rounds" class="mb-3">
-                    <span class="text-body-2 text-grey-darken-1">Vueltas:</span>
-                    <div class="font-weight-medium">{{ tournament.league_rounds }}</div>
-                  </div>
-                  <div v-if="tournament.playoff_teams" class="mb-3">
-                    <span class="text-body-2 text-grey-darken-1">Equipos para playoffs:</span>
-                    <div class="font-weight-medium">{{ tournament.playoff_teams }}</div>
-                  </div>
-                </v-col>
-              </v-row>
-            </v-card-text>
-          </v-card>
-        </v-col>
-
-        <v-col cols="12" md="4">
-          <v-card>
-            <v-card-title class="text-h6">
-              <v-icon start>mdi-chart-line</v-icon>
-              Estadísticas Rápidas
-            </v-card-title>
-            <v-card-text>
-              <div class="mb-3">
-                <span class="text-body-2 text-grey-darken-1">Participantes:</span>
-                <div class="font-weight-medium">{{ tournament.participant_count || 0 }}</div>
-              </div>
-              <div class="mb-3">
-                <span class="text-body-2 text-grey-darken-1">Partidos jugados:</span>
-                <div class="font-weight-medium">{{ tournament.matches_played || 0 }}</div>
-              </div>
-              <div class="mb-3">
-                <span class="text-body-2 text-grey-darken-1">Partidos pendientes:</span>
-                <div class="font-weight-medium">{{ tournament.matches_pending || 0 }}</div>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
       <!-- Navigation tabs -->
       <v-row class="mt-6">
         <v-col cols="12">
@@ -177,93 +92,59 @@
             <v-window v-model="activeTab">
               <v-window-item value="overview">
                 <v-card-text class="pa-6">
-                  <div class="text-center py-8">
-                    <v-icon class="mb-4" color="primary" size="64">mdi-trophy</v-icon>
-                    <h3 class="text-h5 mb-2">{{ tournament.name }}</h3>
-                    <p class="text-body-1 text-grey-darken-1 mb-4">
-                      Selecciona una pestaña para ver los detalles del torneo
-                    </p>
-                  </div>
+                  <TournamentOverview
+                    :tournament="tournament"
+                    @edit-tournament="editTournament"
+                    @go-to-bracket="goToBracket"
+                    @go-to-groups="goToGroups"
+                    @go-to-league="goToLeague"
+                    @go-to-stats="goToStats"
+                  />
                 </v-card-text>
               </v-window-item>
 
               <v-window-item value="teams">
                 <v-card-text class="pa-6">
-                  <div class="text-center">
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-shield"
-                      rounded="xl"
-                      variant="elevated"
-                      @click="goToTeams"
-                    >
-                      Ver Equipos
-                    </v-btn>
-                  </div>
+                  <TournamentTeams
+                    :tournament-id="tournament.id"
+                    @teams-updated="onTeamsUpdated"
+                  />
                 </v-card-text>
               </v-window-item>
 
               <v-window-item v-if="showGroupsTab" value="groups">
                 <v-card-text class="pa-6">
-                  <div class="text-center">
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-account-group"
-                      rounded="xl"
-                      variant="elevated"
-                      @click="goToGroups"
-                    >
-                      Ver Grupos
-                    </v-btn>
-                  </div>
+                  <TournamentGroupsOverview
+                    :tournament="tournament"
+                    @go-to-groups="goToGroups"
+                  />
                 </v-card-text>
               </v-window-item>
 
               <v-window-item v-if="showBracketTab" value="bracket">
                 <v-card-text class="pa-6">
-                  <div class="text-center">
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-trophy"
-                      rounded="xl"
-                      variant="elevated"
-                      @click="goToBracket"
-                    >
-                      Ver Eliminatoria
-                    </v-btn>
-                  </div>
+                  <TournamentBracketOverview
+                    :tournament="tournament"
+                    @go-to-bracket="goToBracket"
+                  />
                 </v-card-text>
               </v-window-item>
 
               <v-window-item v-if="showLeagueTab" value="league">
                 <v-card-text class="pa-6">
-                  <div class="text-center">
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-chart-line"
-                      rounded="xl"
-                      variant="elevated"
-                      @click="goToLeague"
-                    >
-                      Ver Liga
-                    </v-btn>
-                  </div>
+                  <TournamentLeagueOverview
+                    :tournament="tournament"
+                    @go-to-league="goToLeague"
+                  />
                 </v-card-text>
               </v-window-item>
 
               <v-window-item value="stats">
                 <v-card-text class="pa-6">
-                  <div class="text-center">
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-chart-bar"
-                      rounded="xl"
-                      variant="elevated"
-                      @click="goToStats"
-                    >
-                      Ver Estadísticas
-                    </v-btn>
-                  </div>
+                  <TournamentStatsOverview
+                    :tournament="tournament"
+                    @go-to-stats="goToStats"
+                  />
                 </v-card-text>
               </v-window-item>
             </v-window>
@@ -277,6 +158,12 @@
 <script setup>
   import { computed, onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import TournamentBracketOverview from '@/components/TournamentBracketOverview.vue'
+  import TournamentGroupsOverview from '@/components/TournamentGroupsOverview.vue'
+  import TournamentLeagueOverview from '@/components/TournamentLeagueOverview.vue'
+  import TournamentOverview from '@/components/TournamentOverview.vue'
+  import TournamentTeams from '@/components/TournamentTeams.vue'
+  import TournamentStatsOverview from '@/components/TournamentStatsOverview.vue'
   import { handleApiError, tournamentAPI } from '@/services/api'
   import { useAppStore } from '@/stores/app'
 
@@ -339,10 +226,6 @@
     console.log('Eliminar torneo')
   }
 
-  const goToTeams = () => {
-    router.push(`/tournaments/${tournament.value.id}/teams`)
-  }
-
   const goToGroups = () => {
     router.push(`/tournaments/${tournament.value.id}/groups`)
   }
@@ -359,35 +242,10 @@
     router.push(`/tournaments/${tournament.value.id}/stats`)
   }
 
-  // Métodos de utilidad
-  const getStatusColor = status => {
-    const colorMap = {
-      draft: 'grey',
-      active: 'success',
-      completed: 'primary',
-      cancelled: 'error',
-    }
-    return colorMap[status] || 'grey'
-  }
-
-  const getStatusText = status => {
-    const textMap = {
-      draft: 'Borrador',
-      active: 'Activo',
-      completed: 'Completado',
-      cancelled: 'Cancelado',
-    }
-    return textMap[status] || 'Desconocido'
-  }
-
-  const getCompetitionTypeText = type => {
-    const typeMap = {
-      cup: 'Copa (Eliminatoria directa)',
-      league: 'Liga (Todos contra todos)',
-      hybrid: 'Liga + Playoffs',
-      groups: 'Fase de grupos + Eliminatoria',
-    }
-    return typeMap[type] || 'Desconocido'
+  // Método para manejar actualizaciones de equipos
+  const onTeamsUpdated = () => {
+    console.log('Equipos actualizados')
+    // Aquí podrías recargar datos del torneo si es necesario
   }
 
   // Cargar datos al montar
