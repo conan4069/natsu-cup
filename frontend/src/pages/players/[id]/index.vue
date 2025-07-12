@@ -23,6 +23,7 @@
               class="mr-4"
               icon="mdi-arrow-left"
               variant="text"
+              color="white"
               @click="goBack"
             />
             <div class="d-flex align-center">
@@ -37,8 +38,8 @@
                 </v-icon>
               </v-avatar>
               <div>
-                <h1 class="text-h4 font-weight-bold mb-2">{{ player.display_name }}</h1>
-                <p class="text-body-1 text-grey-darken-1">
+                <h1 class="text-h4 font-weight-bold mb-2" style="color: #f3f2e5;">{{ player.display_name }}</h1>
+                <p class="text-body-1" style="color: #deddd6;">
                   Jugador
                 </p>
               </div>
@@ -80,6 +81,8 @@
                 color="warning"
                 prepend-icon="mdi-pencil"
                 variant="outlined"
+                rounded="xl"
+
                 @click="editPlayer"
               >
                 Editar

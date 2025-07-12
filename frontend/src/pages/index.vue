@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="pa-0">
   <!-- Hero Section -->
-  <v-parallax src="@/assets/fondocesped.jpg">
+  <v-parallax src="@/assets/fondo2.jpg">
     <v-row no-gutters>
       <v-col cols="12" class="d-flex justify-center">
         <div class="text-center" style="transform: translateX(-4%);">

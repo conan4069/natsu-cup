@@ -8,11 +8,12 @@
             class="mr-4"
             icon="mdi-arrow-left"
             variant="text"
+            color="white"
             @click="goBack"
           />
           <div>
-            <h1 class="text-h4 font-weight-bold mb-2">Nuevo Jugador</h1>
-            <p class="text-body-1 text-grey-darken-1">
+            <h1 class="text-h4 font-weight-bold mb-2" style="color: #f3f2e5;">Nuevo Jugador</h1>
+            <p class="text-body-1" style="color: #deddd6;">
               Agrega un nuevo jugador al formato de la Natsu Cup
             </p>
           </div>
