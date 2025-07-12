@@ -87,6 +87,17 @@
           </v-chip>
         </template>
 
+        <!-- Estado -->
+        <template #item.status="{ item }">
+          <v-chip
+            :color="getStatusColor(item.status)"
+            size="small"
+            variant="outlined"
+          >
+            {{ getStatusText(item.status) }}
+          </v-chip>
+        </template>
+
         <!-- Configuración -->
         <template #item.config="{ item }">
           <div class="d-flex flex-column">
@@ -227,9 +238,31 @@
   const headers = [
     { title: 'Nombre', key: 'name', sortable: true },
     { title: 'Formato', key: 'format', sortable: true },
+    { title: 'Estado', key: 'status', sortable: true },
     { title: 'Configuración', key: 'config', sortable: false },
     { title: 'Acciones', key: 'actions', sortable: false, align: 'center' },
   ]
+
+  // Métodos de utilidad para el estado
+  const getStatusColor = status => {
+    const colorMap = {
+      draft: 'grey',
+      active: 'success',
+      completed: 'primary',
+      cancelled: 'error',
+    }
+    return colorMap[status] || 'grey'
+  }
+
+  const getStatusText = status => {
+    const textMap = {
+      draft: 'Borrador',
+      active: 'Activo',
+      completed: 'Completado',
+      cancelled: 'Cancelado',
+    }
+    return textMap[status] || 'Desconocido'
+  }
 
   // Computed
   const filteredTournaments = computed(() => {
@@ -238,7 +271,8 @@
     const query = searchQuery.value.toLowerCase()
     return tournaments.value.filter(tournament =>
       tournament.name.toLowerCase().includes(query) ||
-      tournament.format.toLowerCase().includes(query)
+      tournament.format.toLowerCase().includes(query) ||
+      getStatusText(tournament.status).toLowerCase().includes(query)
     )
   })
 

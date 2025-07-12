@@ -89,28 +89,17 @@
                         <strong>Sin equipo asignado</strong>
                       </v-alert>
 
-                      <!-- Lista de equipos disponibles -->
-                      <div class="available-teams">
-                        <h6 class="text-caption mb-2">Equipos disponibles:</h6>
-                        <div class="teams-grid">
-                          <v-card
-                            v-for="team in availableTeamsForSelection"
-                            :key="team.id"
-                            class="team-option-card"
-                            variant="outlined"
-                            @click="updateTeamAssignment(participant.id, team.id)"
-                          >
-                            <v-card-text class="text-center pa-3">
-                              <v-icon class="mb-2" color="primary" size="24">
-                                mdi-shield
-                              </v-icon>
-                              <div class="text-body-2 font-weight-medium">
-                                {{ team.name }}
-                              </div>
-                            </v-card-text>
-                          </v-card>
-                        </div>
-                      </div>
+                      <!-- Select de equipos disponibles -->
+                      <v-select
+                        v-model="participantTeamAssignments[participant.id]"
+                        item-title="name"
+                        item-value="id"
+                        :items="availableTeamsForSelection"
+                        label="Seleccionar equipo"
+                        rounded="xl"
+                        variant="outlined"
+                        @update:model-value="(value) => updateTeamAssignment(participant.id, value)"
+                      />
                     </div>
                   </div>
                 </v-card-text>
@@ -160,17 +149,29 @@
       <v-card class="mb-6" variant="outlined">
         <v-card-title class="text-subtitle-1 d-flex align-center justify-space-between">
           Formación de equipos
-          <v-btn
-            color="primary"
-            :loading="generatingTeams"
-            prepend-icon="mdi-shuffle"
-            rounded="xl"
-            size="small"
-            variant="elevated"
-            @click="generateTeams"
-          >
-            Agrupar automáticamente
-          </v-btn>
+          <div class="d-flex gap-2">
+            <v-btn
+              color="primary"
+              :loading="generatingTeams"
+              prepend-icon="mdi-shuffle"
+              rounded="xl"
+              size="small"
+              variant="elevated"
+              @click="generateTeams"
+            >
+              Agrupar automáticamente
+            </v-btn>
+            <v-btn
+              color="secondary"
+              prepend-icon="mdi-account-multiple"
+              rounded="xl"
+              size="small"
+              variant="outlined"
+              @click="enableManualGrouping"
+            >
+              Agrupar manualmente
+            </v-btn>
+          </div>
         </v-card-title>
         <v-card-text>
           <div v-if="participants.length === 0" class="text-center py-8">
@@ -185,43 +186,177 @@
             </p>
           </div>
           <div v-else>
-            <!-- Participantes disponibles para agrupar -->
-            <v-list>
-              <v-list-item
-                v-for="participant in availableForGrouping"
-                :key="participant.id"
-              >
-                <template #prepend>
-                  <v-avatar size="32">
-                    <v-img
-                      v-if="participant.avatar"
-                      alt="Avatar"
-                      :src="participant.avatar"
-                    />
-                    <v-icon v-else>mdi-account</v-icon>
-                  </v-avatar>
-                </template>
-                <v-list-item-title>{{ participant.display_name }}</v-list-item-title>
-                <template #append>
-                  <v-chip
-                    v-if="getParticipantTeam(participant.id)"
-                    color="primary"
-                    size="small"
+            <!-- Modo de agrupación manual -->
+            <div v-if="manualGroupingMode" class="manual-grouping">
+              <v-alert class="mb-4" type="info" variant="tonal">
+                <strong>Modo manual:</strong> Selecciona participantes para formar equipos de 2.
+              </v-alert>
+
+              <!-- Participantes disponibles -->
+              <div class="mb-4">
+                <h6 class="text-subtitle-2 mb-2">Participantes disponibles:</h6>
+                <div class="participants-grid">
+                  <v-card
+                    v-for="participant in availableForManualGrouping"
+                    :key="participant.id"
+                    class="participant-card"
+                    variant="outlined"
+                    @click="selectParticipantForManualTeam(participant)"
+                  >
+                    <v-card-text class="text-center pa-3">
+                      <v-avatar class="mb-2" size="40">
+                        <v-img
+                          v-if="participant.avatar"
+                          alt="Avatar"
+                          :src="participant.avatar"
+                        />
+                        <v-icon v-else>mdi-account</v-icon>
+                      </v-avatar>
+                      <div class="text-body-2 font-weight-medium">
+                        {{ participant.display_name }}
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </div>
+              </div>
+
+              <!-- Equipos formados manualmente -->
+              <div v-if="manualTeams.length > 0">
+                <h6 class="text-subtitle-2 mb-2">Equipos formados:</h6>
+                <div class="teams-grid">
+                  <v-card
+                    v-for="(team, index) in manualTeams"
+                    :key="index"
+                    class="team-card"
                     variant="outlined"
                   >
-                    {{ getParticipantTeam(participant.id) }}
-                  </v-chip>
-                </template>
-              </v-list-item>
-            </v-list>
+                    <v-card-title class="text-subtitle-2">
+                      Equipo {{ index + 1 }}
+                      <v-btn
+                        class="ml-2"
+                        color="error"
+                        density="comfortable"
+                        icon="mdi-delete"
+                        size="small"
+                        variant="text"
+                        @click="removeManualTeam(index)"
+                      />
+                    </v-card-title>
+                    <v-card-text>
+                      <div v-for="player in team" :key="player.id" class="mb-1">
+                        <div class="d-flex align-center">
+                          <v-avatar class="mr-2" size="24">
+                            <v-img
+                              v-if="player.avatar"
+                              alt="Avatar"
+                              :src="player.avatar"
+                            />
+                            <v-icon v-else size="small">mdi-account</v-icon>
+                          </v-avatar>
+                          <span class="text-body-2">{{ player.display_name }}</span>
+                          <v-spacer />
+                          <v-btn
+                            color="error"
+                            density="comfortable"
+                            icon="mdi-close"
+                            size="x-small"
+                            variant="text"
+                            @click="removePlayerFromManualTeam(index, player)"
+                          />
+                        </div>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </div>
+              </div>
+
+              <!-- Botones de acción -->
+              <div class="mt-4 d-flex gap-2">
+                <v-btn
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  rounded="xl"
+                  size="small"
+                  variant="elevated"
+                  @click="addManualTeam"
+                >
+                  Agregar equipo vacío
+                </v-btn>
+                <v-btn
+                  color="success"
+                  prepend-icon="mdi-check"
+                  rounded="xl"
+                  size="small"
+                  variant="elevated"
+                  @click="applyManualTeams"
+                >
+                  Aplicar equipos
+                </v-btn>
+                <v-btn
+                  color="grey"
+                  prepend-icon="mdi-close"
+                  rounded="xl"
+                  size="small"
+                  variant="outlined"
+                  @click="cancelManualGrouping"
+                >
+                  Cancelar
+                </v-btn>
+              </div>
+            </div>
+
+            <!-- Modo de agrupación automática -->
+            <div v-else>
+              <!-- Participantes disponibles para agrupar -->
+              <v-list>
+                <v-list-item
+                  v-for="participant in availableForGrouping"
+                  :key="participant.id"
+                >
+                  <template #prepend>
+                    <v-avatar size="32">
+                      <v-img
+                        v-if="participant.avatar"
+                        alt="Avatar"
+                        :src="participant.avatar"
+                      />
+                      <v-icon v-else>mdi-account</v-icon>
+                    </v-avatar>
+                  </template>
+                  <v-list-item-title>{{ participant.display_name }}</v-list-item-title>
+                  <template #append>
+                    <v-chip
+                      v-if="getParticipantTeam(participant.id)"
+                      color="primary"
+                      size="small"
+                      variant="outlined"
+                    >
+                      {{ getParticipantTeam(participant.id) }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </div>
           </div>
         </v-card-text>
       </v-card>
 
       <!-- Equipos formados -->
       <v-card v-if="teams.length > 0" variant="outlined">
-        <v-card-title class="text-subtitle-1">
+        <v-card-title class="text-subtitle-1 d-flex align-center justify-space-between">
           Equipos formados ({{ teams.length }})
+          <div class="d-flex gap-2">
+            <v-btn
+              :color="swapMode ? 'error' : 'warning'"
+              prepend-icon="mdi-swap-horizontal"
+              rounded="xl"
+              size="small"
+              variant="outlined"
+              @click="enableSwapMode"
+            >
+              {{ `${swapMode ? 'Deshacer intercambio de' : 'Intercambiar'} jugadores` }}
+            </v-btn>
+          </div>
         </v-card-title>
         <v-card-text>
           <div v-for="(team, index) in teams" :key="index" class="mb-4">
@@ -233,11 +368,22 @@
                 <div class="d-flex align-center mb-3">
                   <div class="flex-grow-1">
                     <div v-for="player in team" :key="player.id" class="mb-1">
-                      <v-avatar v-if="player.avatar" class="mr-2" left size="20">
-                        <v-img :src="player.avatar" />
-                      </v-avatar>
-                      <v-icon v-else class="mr-2" size="small">mdi-account</v-icon>
-                      {{ player.display_name }}
+                      <div class="d-flex align-center">
+                        <v-btn
+                          v-if="swapMode"
+                          :color="isPlayerSelectedForSwap(player) ? 'success' : 'primary'"
+                          density="comfortable"
+                          icon="mdi-swap-horizontal"
+                          size="x-small"
+                          variant="text"
+                          @click="selectPlayerForSwap(player, index)"
+                        />
+                        <v-avatar v-if="player.avatar" class="mr-2" left size="20">
+                          <v-img :src="player.avatar" />
+                        </v-avatar>
+                        <v-icon v-else class="mr-2" size="small">mdi-account</v-icon>
+                        <span class="text-body-2">{{ player.display_name }}</span>
+                      </div>
                     </div>
                   </div>
                   <v-select
@@ -258,6 +404,16 @@
         </v-card-text>
       </v-card>
     </div>
+
+    <!-- Validación de equipos -->
+    <v-alert
+      v-if="tournamentFormat === '2v2' && !isTeamsValid"
+      class="mt-4"
+      type="error"
+      variant="tonal"
+    >
+      <strong>Equipos incompletos:</strong> Todos los participantes deben estar agrupados en equipos de 2.
+    </v-alert>
   </div>
 </template>
 
@@ -283,7 +439,7 @@
   })
 
   // Emits
-  const emit = defineEmits(['update:teams', 'update:team-assignments', 'update:team-entries'])
+  const emit = defineEmits(['update:teams', 'update:team-assignments', 'update:team-entries', 'teams-valid'])
 
   // Router
   const router = useRouter()
@@ -296,11 +452,24 @@
   const participantTeamAssignments = ref({})
   const teamGameTeamAssignments = ref({})
   const existingEntries = ref([])
+  const manualGroupingMode = ref(false)
+  const manualTeams = ref([])
+  const swapMode = ref(false)
+  const selectedPlayerForSwap = ref(null)
+  const selectedTeamForSwap = ref(null)
 
   // Computed
   const availableForGrouping = computed(() => {
     const usedPlayers = new Set()
     for (const team of teams.value) {
+      for (const player of team) usedPlayers.add(player.id)
+    }
+    return props.participants.filter(player => !usedPlayers.has(player.id))
+  })
+
+  const availableForManualGrouping = computed(() => {
+    const usedPlayers = new Set()
+    for (const team of manualTeams.value) {
       for (const player of team) usedPlayers.add(player.id)
     }
     return props.participants.filter(player => !usedPlayers.has(player.id))
@@ -325,7 +494,27 @@
       if (teamId) selectedTeamIds.add(teamId)
     }
 
-    return availableTeams.value.filter(team => !selectedTeamIds.has(team.id))
+    // Incluir todos los equipos disponibles, incluso los ya seleccionados
+    // para que se muestren correctamente en los selects
+    return availableTeams.value
+  })
+
+  // Validación de equipos para 2v2
+  const isTeamsValid = computed(() => {
+    if (props.tournamentFormat !== '2v2') return true
+
+    // Verificar que todos los participantes estén en equipos
+    const usedPlayers = new Set()
+    for (const team of teams.value) {
+      for (const player of team) usedPlayers.add(player.id)
+    }
+
+    // Verificar que todos los equipos tengan exactamente 2 jugadores
+    for (const team of teams.value) {
+      if (team.length !== 2) return false
+    }
+
+    return usedPlayers.size === props.participants.length
   })
 
   // Computed para generar las entradas de equipos en formato correcto para la API
@@ -339,7 +528,6 @@
         entries.push({
           players: [participant.id],
           assigned_team: teamId || null,
-          // NO incluir tournament aquí - el backend lo maneja automáticamente
         })
       }
     } else if (props.tournamentFormat === '2v2') {
@@ -349,7 +537,6 @@
         entries.push({
           players: team.map(player => player.id),
           assigned_team: teamId || null,
-          // NO incluir tournament aquí - el backend lo maneja automáticamente
         })
       }
     }
@@ -374,24 +561,77 @@
       const response = await tournamentAPI.getTeamEntries(props.tournamentId)
       existingEntries.value = response.data
 
-      // Mapear las asignaciones existentes
-      const assignments = {}
-      for (const entry of existingEntries.value) {
-        if (entry.players && entry.players.length > 0) {
-          for (const player of entry.players) {
-            assignments[player.id] = entry.assigned_team?.id || null
+      console.log('Entradas existentes cargadas:', existingEntries.value)
+      console.log('Participantes disponibles:', props.participants)
+
+      if (props.tournamentFormat === '1v1') {
+        // Para formato 1v1, mapear asignaciones individuales
+        const assignments = {}
+        for (const entry of existingEntries.value) {
+          if (entry.players && entry.players.length > 0) {
+            for (const player of entry.players) {
+              assignments[player.id] = entry.assigned_team?.id || null
+            }
           }
         }
+        participantTeamAssignments.value = assignments
+        emit('update:team-assignments', assignments)
+        console.log('Asignaciones 1v1 cargadas:', assignments)
+      } else if (props.tournamentFormat === '2v2') {
+        // Para formato 2v2, reconstruir equipos y asignaciones
+        const reconstructedTeams = []
+        const teamAssignments = {}
+
+        console.log('Reconstruyendo equipos para formato 2v2...')
+
+        for (const entry of existingEntries.value) {
+          console.log('Procesando entrada:', entry)
+
+          if (entry.players && entry.players.length > 0) {
+            // Reconstruir el equipo con los participantes completos
+            const teamPlayers = entry.players.map(player => {
+              // Buscar el participante completo en props.participants
+              const foundPlayer = props.participants.find(p => p.id === player.id)
+              if (!foundPlayer) {
+                console.warn(`Participante no encontrado:`, player)
+              }
+              return foundPlayer
+            }).filter(Boolean)
+
+            console.log('Jugadores del equipo reconstruido:', teamPlayers)
+
+            if (teamPlayers.length > 0) {
+              reconstructedTeams.push(teamPlayers)
+              const teamIndex = reconstructedTeams.length - 1
+              // Asignar el equipo del juego a este equipo
+              teamAssignments[teamIndex] = entry.assigned_team?.id || null
+              console.log(`Equipo ${teamIndex} asignado a:`, entry.assigned_team?.id)
+            }
+          }
+        }
+
+        console.log('Equipos reconstruidos:', reconstructedTeams)
+        console.log('Asignaciones de equipos:', teamAssignments)
+
+        teams.value = reconstructedTeams
+        teamGameTeamAssignments.value = teamAssignments
+        emit('update:teams', reconstructedTeams)
       }
 
-      participantTeamAssignments.value = assignments
-      emit('update:team-assignments', assignments)
       emit('update:team-entries', teamEntries.value)
-
-      console.log('Entradas existentes cargadas:', existingEntries.value)
     } catch (error) {
       console.error('Error al cargar entradas existentes:', error)
     }
+  }
+
+  // Método para obtener el equipo completo por ID
+  const getTeamById = teamId => {
+    return availableTeams.value.find(team => team.id === teamId)
+  }
+
+  // Método para obtener el ID del equipo del objeto completo
+  const getTeamId = team => {
+    return team ? team.id : null
   }
 
   const assignTeamsRandomly = async () => {
@@ -469,20 +709,157 @@
     emit('update:team-entries', teamEntries.value)
   }
 
+  // Métodos para agrupación manual
+  const enableManualGrouping = () => {
+    manualGroupingMode.value = true
+    manualTeams.value = []
+  }
+
+  const selectParticipantForManualTeam = participant => {
+    // Buscar un equipo que tenga espacio
+    let targetTeamIndex = -1
+    for (let i = 0; i < manualTeams.value.length; i++) {
+      if (manualTeams.value[i].length < 2) {
+        targetTeamIndex = i
+        break
+      }
+    }
+
+    // Si no hay equipo con espacio, crear uno nuevo
+    if (targetTeamIndex === -1) {
+      manualTeams.value.push([])
+      targetTeamIndex = manualTeams.value.length - 1
+    }
+
+    // Agregar participante al equipo
+    manualTeams.value[targetTeamIndex].push(participant)
+  }
+
+  const addManualTeam = () => {
+    manualTeams.value.push([])
+  }
+
+  const removeManualTeam = index => {
+    manualTeams.value.splice(index, 1)
+  }
+
+  const removePlayerFromManualTeam = (teamIndex, player) => {
+    manualTeams.value[teamIndex] = manualTeams.value[teamIndex].filter(p => p.id !== player.id)
+    if (manualTeams.value[teamIndex].length === 0) {
+      removeManualTeam(teamIndex)
+    }
+  }
+
+  const applyManualTeams = () => {
+    // Filtrar equipos que tengan exactamente 2 jugadores
+    const validTeams = manualTeams.value.filter(team => team.length === 2)
+    teams.value = validTeams
+    emit('update:teams', validTeams)
+    emit('update:team-entries', teamEntries.value)
+    manualGroupingMode.value = false
+  }
+
+  const cancelManualGrouping = () => {
+    manualGroupingMode.value = false
+    manualTeams.value = []
+  }
+
+  // Métodos para intercambio de jugadores
+  const enableSwapMode = () => {
+    swapMode.value = !swapMode.value
+    selectedPlayerForSwap.value = null
+    selectedTeamForSwap.value = null
+  }
+
+  const isPlayerSelectedForSwap = player => {
+    return selectedPlayerForSwap.value && selectedPlayerForSwap.value.id === player.id
+  }
+
+  const selectPlayerForSwap = (player, teamIndex) => {
+    if (selectedPlayerForSwap.value) {
+      // Segundo jugador seleccionado - hacer el intercambio
+      const firstPlayer = selectedPlayerForSwap.value
+      const firstTeamIndex = selectedTeamForSwap.value
+
+      // Encontrar el segundo jugador en su equipo
+      const secondTeamIndex = teamIndex
+      const secondPlayerIndex = teams.value[secondTeamIndex].findIndex(p => p.id === player.id)
+      const firstPlayerIndex = teams.value[firstTeamIndex].findIndex(p => p.id === firstPlayer.id)
+
+      if (secondPlayerIndex !== -1 && firstPlayerIndex !== -1) {
+        // Intercambiar jugadores
+        const temp = teams.value[firstTeamIndex][firstPlayerIndex]
+        teams.value[firstTeamIndex][firstPlayerIndex] = teams.value[secondTeamIndex][secondPlayerIndex]
+        teams.value[secondTeamIndex][secondPlayerIndex] = temp
+
+        // Emitir cambios
+        emit('update:teams', teams.value)
+        emit('update:team-entries', teamEntries.value)
+      }
+
+      // Resetear selección
+      selectedPlayerForSwap.value = null
+      selectedTeamForSwap.value = null
+      swapMode.value = false
+    } else {
+      // Primer jugador seleccionado
+      selectedPlayerForSwap.value = player
+      selectedTeamForSwap.value = teamIndex
+    }
+  }
+
   const goToCreateTeams = () => {
     router.push('/teams/create')
   }
 
-  // Cargar datos al montar
-  onMounted(async () => {
-    await loadGameTeams()
-    await loadExistingEntries()
+  // Observar cambios en isTeamsValid para emitir el estado
+  watch(isTeamsValid, valid => {
+    emit('teams-valid', valid)
   })
 
   // Observar cambios en teamEntries para emitir actualizaciones
   watch(teamEntries, newEntries => {
     emit('update:team-entries', newEntries)
   }, { deep: true })
+
+  // Observar cambios en tournamentFormat para resetear el estado
+  watch(() => props.tournamentFormat, newFormat => {
+    if (newFormat === '1v1') {
+      // Resetear equipos para formato 1v1
+      teams.value = []
+      manualGroupingMode.value = false
+      manualTeams.value = []
+      swapMode.value = false
+    } else if (newFormat === '2v2') {
+      // Resetear asignaciones individuales para formato 2v2
+      participantTeamAssignments.value = {}
+    }
+  })
+
+  // Observar cambios en participants para recargar entradas cuando cambien
+  watch(() => props.participants, newParticipants => {
+    if (newParticipants && newParticipants.length > 0) {
+      console.log('Participantes actualizados, recargando entradas...')
+      loadExistingEntries()
+    }
+  }, { deep: true })
+
+  // Cargar datos al montar
+  onMounted(async () => {
+    await loadGameTeams()
+
+    // Esperar a que los participantes estén disponibles antes de cargar entradas
+    if (props.participants && props.participants.length > 0) {
+      await loadExistingEntries()
+    } else {
+      // Si no hay participantes, esperar un poco y verificar de nuevo
+      setTimeout(async () => {
+        if (props.participants && props.participants.length > 0) {
+          await loadExistingEntries()
+        }
+      }, 1000)
+    }
+  })
 </script>
 
 <style scoped>
@@ -493,12 +870,14 @@
   gap: 16px;
 }
 .participant-card,
-.team-option-card {
+.team-option-card,
+.team-card {
   min-width: 220px;
   cursor: pointer;
   transition: box-shadow 0.2s;
 }
+.participant-card:hover,
 .team-option-card:hover {
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 </style>
