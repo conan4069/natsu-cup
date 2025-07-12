@@ -3,13 +3,33 @@ from .models import Match, TeamEntry, GroupStanding
 import random
 
 def generate_group_matches(tournament, group_entries_map):
-  for group_code, teams in group_entries_map.items():
-    for a, b in combinations(teams, 2):
-      Match.objects.create(
-        tournament=tournament,
-        stage='group',
-        group_code=group_code,
-      ).participants.set([a, b])
+    """
+    Genera partidos de grupos y retorna la lista de partidos creados.
+    Solo crea partidos que no existan previamente.
+    """
+    matches_created = []
+    
+    for group_code, teams in group_entries_map.items():
+        for a, b in combinations(teams, 2):
+            # Verificar si ya existe el partido
+            existing_match = Match.objects.filter(
+                tournament=tournament,
+                stage='group',
+                group_code=group_code,
+                participants=a
+            ).filter(participants=b).first()
+            
+            if not existing_match:
+                # Crear nuevo partido
+                match = Match.objects.create(
+                    tournament=tournament,
+                    stage='group',
+                    group_code=group_code,
+                )
+                match.participants.set([a, b])
+                matches_created.append(match)
+    
+    return matches_created
 
 def generate_knockout_bracket(tournament, qualified_teams, stage='round_of_16'):
   random.shuffle(qualified_teams)
@@ -117,4 +137,88 @@ def generate_playoffs_for_missing_slots(tournament, desired_total, stage_name):
         new_matches.append(m)
 
     return new_matches
+
+def get_qualified_teams_for_knockout(tournament):
+    """
+    Obtiene los equipos clasificados para la fase eliminatoria.
+    Retorna un diccionario con los equipos organizados por tipo de clasificación.
+    """
+    standings = GroupStanding.objects.filter(tournament=tournament)
+    
+    # Agrupar por grupo
+    group_map = {}
+    for standing in standings:
+        group_map.setdefault(standing.group_code, []).append(standing)
+    
+    qualified_teams = {
+        'group_winners': [],
+        'group_runners_up': [],
+        'best_third_place': [],
+        'total_qualified': 0
+    }
+    
+    # Obtener primeros y segundos de cada grupo
+    for group_code, group_standings in group_map.items():
+        sorted_standings = sorted(
+            group_standings,
+            key=lambda x: (x.points, x.goal_difference, x.goals_for),
+            reverse=True
+        )
+        
+        # Agregar primero (ganador del grupo)
+        if len(sorted_standings) >= 1:
+            qualified_teams['group_winners'].append({
+                'team_entry': sorted_standings[0].team_entry,
+                'group_code': group_code,
+                'position': 1,
+                'points': sorted_standings[0].points,
+                'goal_difference': sorted_standings[0].goal_difference,
+                'goals_for': sorted_standings[0].goals_for
+            })
+        
+        # Agregar segundo (subcampeón del grupo)
+        if len(sorted_standings) >= 2:
+            qualified_teams['group_runners_up'].append({
+                'team_entry': sorted_standings[1].team_entry,
+                'group_code': group_code,
+                'position': 2,
+                'points': sorted_standings[1].points,
+                'goal_difference': sorted_standings[1].goal_difference,
+                'goals_for': sorted_standings[1].goals_for
+            })
+    
+    # Obtener los mejores terceros
+    all_thirds = []
+    for group_code, group_standings in group_map.items():
+        sorted_standings = sorted(
+            group_standings,
+            key=lambda x: (x.points, x.goal_difference, x.goals_for),
+            reverse=True
+        )
+        
+        if len(sorted_standings) >= 3:
+            all_thirds.append({
+                'team_entry': sorted_standings[2].team_entry,
+                'group_code': group_code,
+                'position': 3,
+                'points': sorted_standings[2].points,
+                'goal_difference': sorted_standings[2].goal_difference,
+                'goals_for': sorted_standings[2].goals_for
+            })
+    
+    # Ordenar terceros por méritos
+    all_thirds.sort(key=lambda x: (x['points'], x['goal_difference'], x['goals_for']), reverse=True)
+    
+    # Tomar los mejores terceros (normalmente 4 para completar 16 equipos)
+    needed_third_place = 4  # Ajustar según el formato del torneo
+    qualified_teams['best_third_place'] = all_thirds[:needed_third_place]
+    
+    # Calcular total
+    qualified_teams['total_qualified'] = (
+        len(qualified_teams['group_winners']) + 
+        len(qualified_teams['group_runners_up']) + 
+        len(qualified_teams['best_third_place'])
+    )
+    
+    return qualified_teams
 

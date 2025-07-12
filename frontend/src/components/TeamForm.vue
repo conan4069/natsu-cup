@@ -120,9 +120,9 @@
     emit('valid-change', newValid)
   })
 
-  // Cargar datos del equipo si está en modo edición
+  // Cargar datos del equipo si está en modo edición o vista
   onMounted(() => {
-    if (props.team && props.mode === 'edit') {
+    if (props.team && (props.mode === 'edit' || props.mode === 'view')) {
       form.value = {
         name: props.team.name || '',
         logo: null,

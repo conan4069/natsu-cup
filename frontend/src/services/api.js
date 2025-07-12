@@ -42,6 +42,15 @@ export const tournamentAPI = {
 
   // Actualizar clasificación
   updateTournamentStandings: tournamentId => api.post(`/tournaments/${tournamentId}/update-standings/`),
+
+  // Obtener clasificaciones de grupos
+  getGroupStandings: tournamentId => api.get(`/tournaments/${tournamentId}/group-standings/`),
+
+  // Generar fase eliminatoria
+  generateKnockoutStage: tournamentId => api.post(`/tournaments/${tournamentId}/generate-knockout/`),
+
+  // Obtener equipos clasificados
+  getQualifiedTeams: tournamentId => api.get(`/tournaments/${tournamentId}/qualified-teams/`),
 }
 
 // Funciones de API para partidos

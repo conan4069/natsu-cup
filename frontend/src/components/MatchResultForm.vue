@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600">
+  <v-dialog v-model="dialog" max-width="900">
     <v-card>
       <v-card-title class="text-h6">
         <v-icon start>mdi-soccer</v-icon>
@@ -9,34 +9,68 @@
       <v-card-text>
         <div v-if="match" class="match-info mb-4">
           <div class="d-flex align-center justify-space-between mb-3">
+            <!-- Equipo 1 -->
             <div class="team-display">
               <v-avatar class="mr-3" size="48">
                 <v-img
-                  v-if="match.team1?.logo"
+                  v-if="getTeam(0)?.assigned_team?.logo"
                   alt="Logo equipo 1"
-                  :src="match.team1.logo"
+                  :src="getTeam(0).assigned_team.logo"
                 />
                 <v-icon v-else size="24">mdi-shield</v-icon>
               </v-avatar>
               <span class="text-h6 font-weight-bold">
-                {{ match.team1?.name || match.placeholder_team1 || 'TBD' }}
+                {{ getTeam(0)?.assigned_team?.name || getTeam(0)?.team_name || 'Equipo 1' }}
               </span>
+              <div class="mt-2">
+                <v-chip
+                  v-for="player in getTeam(0)?.players || []"
+                  :key="player.id"
+                  class="ma-1"
+                  color="primary"
+                  label
+                  size="small"
+                  variant="outlined"
+                >
+                  <v-avatar v-if="player.avatar" left size="20">
+                    <v-img :src="player.avatar" />
+                  </v-avatar>
+                  {{ player.display_name }}
+                </v-chip>
+              </div>
             </div>
             <div class="vs-divider">
               <span class="text-h4 font-weight-bold text-grey">VS</span>
             </div>
+            <!-- Equipo 2 -->
             <div class="team-display">
               <span class="text-h6 font-weight-bold">
-                {{ match.team2?.name || match.placeholder_team2 || 'TBD' }}
+                {{ getTeam(1)?.assigned_team?.name || getTeam(1)?.team_name || 'Equipo 2' }}
               </span>
               <v-avatar class="ml-3" size="48">
                 <v-img
-                  v-if="match.team2?.logo"
+                  v-if="getTeam(1)?.assigned_team?.logo"
                   alt="Logo equipo 2"
-                  :src="match.team2.logo"
+                  :src="getTeam(1).assigned_team.logo"
                 />
                 <v-icon v-else size="24">mdi-shield</v-icon>
               </v-avatar>
+              <div class="mt-2">
+                <v-chip
+                  v-for="player in getTeam(1)?.players || []"
+                  :key="player.id"
+                  class="ma-1"
+                  color="primary"
+                  label
+                  size="small"
+                  variant="outlined"
+                >
+                  <v-avatar v-if="player.avatar" left size="20">
+                    <v-img :src="player.avatar" />
+                  </v-avatar>
+                  {{ player.display_name }}
+                </v-chip>
+              </div>
             </div>
           </div>
 
@@ -46,13 +80,14 @@
             <div class="d-flex align-center justify-space-between">
               <div class="team-score-input">
                 <label class="text-subtitle-2 mb-2 d-block">
-                  {{ match.team1?.name || 'Equipo 1' }}
+                  {{ getTeam(0)?.assigned_team?.name || getTeam(0)?.team_name || 'Equipo 1' }}
                 </label>
                 <v-text-field
                   v-model.number="team1Score"
                   class="score-field"
                   density="comfortable"
                   min="0"
+                  rounded="xl"
                   :rules="scoreRules"
                   type="number"
                   variant="outlined"
@@ -65,13 +100,14 @@
 
               <div class="team-score-input">
                 <label class="text-subtitle-2 mb-2 d-block">
-                  {{ match.team2?.name || 'Equipo 2' }}
+                  {{ getTeam(1)?.assigned_team?.name || getTeam(1)?.team_name || 'Equipo 2' }}
                 </label>
                 <v-text-field
                   v-model.number="team2Score"
                   class="score-field"
                   density="comfortable"
                   min="0"
+                  rounded="xl"
                   :rules="scoreRules"
                   type="number"
                   variant="outlined"
@@ -103,6 +139,7 @@
       <v-card-actions>
         <v-spacer />
         <v-btn
+          rounded="xl"
           variant="outlined"
           @click="closeDialog"
         >
@@ -112,11 +149,12 @@
           color="primary"
           :disabled="!isValid"
           :loading="saving"
+          rounded="xl"
           variant="elevated"
           @click="saveResult"
         >
           <v-icon start>mdi-content-save</v-icon>
-          Guardar Resultado
+          {{ isEditing ? 'Actualizar' : 'Guardar' }} Resultado
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -152,8 +190,12 @@
     set: value => emit('update:modelValue', value),
   })
 
+  const isEditing = computed(() => {
+    return props.match?.played || false
+  })
+
   const scoreRules = [
-    v => v !== null && v !== undefined || 'El marcador es requerido',
+    v => (v !== null && v !== undefined) || 'El marcador es requerido',
     v => v >= 0 || 'El marcador no puede ser negativo',
     v => v <= 50 || 'El marcador no puede ser mayor a 50',
   ]
@@ -174,13 +216,18 @@
     if (!isValid.value) return null
 
     if (team1Score.value > team2Score.value) {
-      return props.match?.team1?.name || 'Equipo 1'
+      return getTeam(0)?.assigned_team?.name || getTeam(0)?.team_name || 'Equipo 1'
     } else if (team2Score.value > team1Score.value) {
-      return props.match?.team2?.name || 'Equipo 2'
+      return getTeam(1)?.assigned_team?.name || getTeam(1)?.team_name || 'Equipo 2'
     }
 
     return null
   })
+
+  // Métodos para obtener info de los equipos
+  function getTeam (idx) {
+    return props.match?.participants?.[idx] || null
+  }
 
   // Métodos
   const closeDialog = () => {

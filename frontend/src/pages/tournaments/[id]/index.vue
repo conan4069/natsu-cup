@@ -343,27 +343,27 @@
   }
 
   // Métodos de utilidad
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     const colorMap = {
-      'draft': 'grey',
-      'active': 'success',
-      'completed': 'primary',
-      'cancelled': 'error',
+      draft: 'grey',
+      active: 'success',
+      completed: 'primary',
+      cancelled: 'error',
     }
     return colorMap[status] || 'grey'
   }
 
-  const getStatusText = (status) => {
+  const getStatusText = status => {
     const textMap = {
-      'draft': 'Borrador',
-      'active': 'Activo',
-      'completed': 'Completado',
-      'cancelled': 'Cancelado',
+      draft: 'Borrador',
+      active: 'Activo',
+      completed: 'Completado',
+      cancelled: 'Cancelado',
     }
     return textMap[status] || 'Desconocido'
   }
 
-  const getCompetitionTypeText = (type) => {
+  const getCompetitionTypeText = type => {
     const typeMap = {
       cup: 'Copa (Eliminatoria directa)',
       league: 'Liga (Todos contra todos)',

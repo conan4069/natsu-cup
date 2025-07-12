@@ -1,5 +1,5 @@
 <template>
-  <v-parallax height="100vh" src="@/assets/fondo2.jpg">
+  <v-parallax src="@/assets/fondo2.jpg">
     <v-container fluid>
 
       <!-- Header -->
@@ -391,15 +391,15 @@
     console.log('Ver estadísticas')
   }
 
-  const viewTournament = (id) => {
+  const viewTournament = id => {
     router.push(`/tournaments/${id}`)
   }
 
-  const viewPlayer = (id) => {
+  const viewPlayer = id => {
     router.push(`/players/${id}`)
   }
 
-  const viewTeam = (id) => {
+  const viewTeam = id => {
     router.push(`/teams/${id}`)
   }
 

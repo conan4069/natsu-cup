@@ -72,6 +72,7 @@
                 <v-list-item
                   v-for="entry in teamEntries"
                   :key="entry.id"
+                  class="mb-3"
                 >
                   <template #prepend>
                     <v-avatar size="40">
@@ -83,12 +84,43 @@
                       <v-icon v-else>mdi-shield</v-icon>
                     </v-avatar>
                   </template>
-                  <v-list-item-title>
-                    {{ entry.assigned_team?.name || 'Sin equipo asignado' }}
+
+                  <v-list-item-title class="mb-2">
+                    <strong>{{ entry.assigned_team?.name || 'Sin equipo asignado' }}</strong>
                   </v-list-item-title>
+
                   <v-list-item-subtitle>
-                    {{ entry.players?.length || 0 }} jugador(es)
+                    <div class="d-flex align-center mb-2">
+                      <v-icon class="mr-1" size="16">mdi-account</v-icon>
+                      <span>{{ entry.players?.length || 0 }} jugador(es)</span>
+                    </div>
+
+                    <!-- Lista de participantes -->
+                    <div v-if="entry.players && entry.players.length > 0" class="participants-list">
+                      <div class="d-flex flex-wrap gap-1">
+                        <v-chip
+                          v-for="player in entry.players"
+                          :key="player.id"
+                          class="ma-1"
+                          color="primary"
+                          label
+                          size="small"
+                          variant="outlined"
+                        >
+                          <v-avatar v-if="player.avatar" left size="16">
+                            <v-img :src="player.avatar" />
+                          </v-avatar>
+                          <v-icon v-else left size="16">mdi-account</v-icon>
+                          {{ player.display_name || player.name || 'Sin nombre' }}
+                        </v-chip>
+                      </div>
+                    </div>
+
+                    <div v-else class="text-grey-darken-1 text-caption">
+                      No hay participantes registrados
+                    </div>
                   </v-list-item-subtitle>
+
                   <template #append>
                     <v-chip
                       v-if="entry.assigned_team"

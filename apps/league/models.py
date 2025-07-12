@@ -95,6 +95,8 @@ class Match(models.Model):
     goals = models.JSONField(default=dict)
     played = models.BooleanField(default=False)
     scheduled_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     # Para encadenar rondas
     player_slot_1 = models.ForeignKey('self', null=True, blank=True, related_name='next_1', on_delete=models.SET_NULL)

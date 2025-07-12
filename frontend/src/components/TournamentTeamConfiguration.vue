@@ -233,7 +233,10 @@
                 <div class="d-flex align-center mb-3">
                   <div class="flex-grow-1">
                     <div v-for="player in team" :key="player.id" class="mb-1">
-                      <v-icon class="mr-2" size="small">mdi-account</v-icon>
+                      <v-avatar v-if="player.avatar" class="mr-2" left size="20">
+                        <v-img :src="player.avatar" />
+                      </v-avatar>
+                      <v-icon v-else class="mr-2" size="small">mdi-account</v-icon>
                       {{ player.display_name }}
                     </div>
                   </div>
