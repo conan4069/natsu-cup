@@ -36,6 +36,7 @@
       class="mb-4"
       color="primary"
       label="Número total de equipos"
+      placeholder="Ej: 8, 16, 32"
       prepend-inner-icon="mdi-numeric"
       :readonly="readonly || mode === 'view'"
       required
@@ -45,47 +46,55 @@
       variant="outlined"
     />
 
-    <!-- Equipos por grupo -->
-    <v-text-field
-      v-model.number="form.teams_per_group"
-      class="mb-4"
-      color="primary"
-      label="Equipos por grupo"
-      prepend-inner-icon="mdi-group"
-      :readonly="readonly || mode === 'view'"
-      required
-      rounded="xl"
-      :rules="teamsPerGroupRules"
-      type="number"
-      variant="outlined"
-    />
-
     <!-- Configuración de fases -->
-    <v-row class="mb-4">
-      <v-col cols="12" md="6">
-        <v-switch
-          v-model="form.has_group_stage"
+    <v-card class="mb-4" variant="outlined">
+      <v-card-title class="text-subtitle-1">
+        Configuración de fases
+      </v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-switch
+              v-model="form.has_group_stage"
+              color="primary"
+              label="Fase de grupos"
+              :readonly="readonly || mode === 'view'"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-switch
+              v-model="form.has_knockout"
+              color="primary"
+              label="Fase eliminatoria"
+              :readonly="readonly || mode === 'view'"
+            />
+          </v-col>
+        </v-row>
+
+        <v-text-field
+          v-if="form.has_group_stage"
+          v-model.number="form.teams_per_group"
+          class="mt-4"
           color="primary"
-          label="Fase de grupos"
+          label="Equipos por grupo"
+          placeholder="Ej: 4"
+          prepend-inner-icon="mdi-group"
           :readonly="readonly || mode === 'view'"
+          required
+          rounded="xl"
+          :rules="teamsPerGroupRules"
+          type="number"
+          variant="outlined"
         />
-      </v-col>
-      <v-col cols="12" md="6">
-        <v-switch
-          v-model="form.has_knockout"
-          color="primary"
-          label="Fase eliminatoria"
-          :readonly="readonly || mode === 'view'"
-        />
-      </v-col>
-    </v-row>
+      </v-card-text>
+    </v-card>
 
     <!-- Reglas del torneo -->
     <v-textarea
       v-model="form.rules"
       class="mb-4"
       color="primary"
-      label="Reglas del torneo"
+      label="Reglas del torneo (opcional)"
       placeholder="Describe las reglas específicas del torneo..."
       prepend-inner-icon="mdi-file-document"
       :readonly="readonly || mode === 'view'"
@@ -128,9 +137,9 @@
     name: '',
     format: '1v1',
     total_teams: 8,
-    teams_per_group: 4,
     has_group_stage: false,
     has_knockout: true,
+    teams_per_group: 4,
     rules: '',
   })
 
@@ -155,12 +164,14 @@
     v => !!v || 'El número de equipos es requerido',
     v => v >= 2 || 'Debe haber al menos 2 equipos',
     v => v <= 64 || 'No puede haber más de 64 equipos',
+    v => Number.isInteger(v) || 'Debe ser un número entero',
   ]
 
   const teamsPerGroupRules = [
-    v => !!v || 'El número de equipos por grupo es requerido',
-    v => v >= 2 || 'Debe haber al menos 2 equipos por grupo',
-    v => v <= 8 || 'No puede haber más de 8 equipos por grupo',
+    v => !form.value.has_group_stage || !!v || 'Equipos por grupo es requerido cuando hay fase de grupos',
+    v => !form.value.has_group_stage || v >= 2 || 'Debe haber al menos 2 equipos por grupo',
+    v => !form.value.has_group_stage || v <= 8 || 'No puede haber más de 8 equipos por grupo',
+    v => !form.value.has_group_stage || Number.isInteger(v) || 'Debe ser un número entero',
   ]
 
   // Computed para determinar si el formulario está en modo solo lectura
@@ -183,9 +194,9 @@
         name: props.tournament.name || '',
         format: props.tournament.format || '1v1',
         total_teams: props.tournament.total_teams || 8,
-        teams_per_group: props.tournament.teams_per_group || 4,
         has_group_stage: props.tournament.has_group_stage || false,
         has_knockout: props.tournament.has_knockout === undefined ? true : props.tournament.has_knockout,
+        teams_per_group: props.tournament.teams_per_group || 4,
         rules: props.tournament.rules || '',
       }
     }
@@ -202,9 +213,9 @@
       name: '',
       format: '1v1',
       total_teams: 8,
-      teams_per_group: 4,
       has_group_stage: false,
       has_knockout: true,
+      teams_per_group: 4,
       rules: '',
     }
   }
@@ -214,9 +225,9 @@
       name: form.value.name,
       format: form.value.format,
       total_teams: form.value.total_teams,
-      teams_per_group: form.value.teams_per_group,
       has_group_stage: form.value.has_group_stage,
       has_knockout: form.value.has_knockout,
+      teams_per_group: form.value.teams_per_group,
       rules: form.value.rules,
     }
   }

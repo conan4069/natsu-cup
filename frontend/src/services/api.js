@@ -1,4 +1,4 @@
-import api, { handleApiError } from '@/utils/axios'
+import api from '@/utils/axios'
 
 // Funciones de API para torneos (coincide con apps/league/urls.py)
 export const tournamentAPI = {
@@ -106,4 +106,5 @@ export const teamAPI = {
 }
 
 // Exportar la función de manejo de errores para uso en componentes
-export { handleApiError }
+
+export { handleApiError } from '@/utils/axios'

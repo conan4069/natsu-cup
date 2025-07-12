@@ -61,8 +61,8 @@
         </v-card-title>
         <v-card-text>
           <v-radio-group v-model="teamGenerationMode" class="mb-4" inline>
-            <v-radio value="automatic" label="Generación automática" />
-            <v-radio value="manual" label="Asignación manual de equipos" />
+            <v-radio label="Generación automática" value="automatic" />
+            <v-radio label="Asignación manual de equipos" value="manual" />
           </v-radio-group>
         </v-card-text>
       </v-card>
@@ -75,9 +75,9 @@
             <v-btn
               color="success"
               prepend-icon="mdi-check"
-              variant="elevated"
               rounded="xl"
               size="small"
+              variant="elevated"
               @click="applyManualTeams"
             >
               Aplicar cambios
@@ -88,13 +88,13 @@
               <v-card
                 v-for="participant in participants"
                 :key="participant.id"
-                variant="outlined"
                 class="participant-card"
                 :class="{ 'assigned': getParticipantTeam(participant.id) !== null }"
+                variant="outlined"
               >
                 <v-card-text class="pa-3">
                   <div class="d-flex align-center mb-3">
-                    <v-avatar size="40" class="mr-3">
+                    <v-avatar class="mr-3" size="40">
                       <v-img
                         v-if="participant.avatar"
                         alt="Avatar"
@@ -112,19 +112,19 @@
 
                   <v-select
                     v-model="participantTeams[participant.id]"
-                    :items="availableTeams"
+                    clearable
+                    density="compact"
                     item-title="name"
                     item-value="id"
+                    :items="availableTeams"
                     label="Asignar a equipo"
-                    density="compact"
-                    variant="outlined"
                     rounded="xl"
-                    clearable
+                    variant="outlined"
                     @update:model-value="updateParticipantTeam(participant.id, $event)"
                   >
                     <template #item="{ item }">
                       <div class="d-flex align-center">
-                        <v-avatar color="primary" size="20" class="mr-2">
+                        <v-avatar class="mr-2" color="primary" size="20">
                           <span class="text-white text-caption">{{ item.raw.id }}</span>
                         </v-avatar>
                         {{ item.raw.name }}
@@ -147,9 +147,9 @@
             color="primary"
             :loading="generatingTeams"
             prepend-icon="mdi-shuffle"
-            variant="elevated"
             rounded="xl"
             size="small"
+            variant="elevated"
             @click="generateTeams"
           >
             Generar equipos
@@ -167,11 +167,11 @@
             <v-card
               v-for="(team, index) in teams"
               :key="index"
-              variant="outlined"
               class="team-card"
+              variant="outlined"
             >
               <v-card-title class="text-subtitle-2 d-flex align-center">
-                <v-avatar color="primary" size="24" class="mr-2">
+                <v-avatar class="mr-2" color="primary" size="24">
                   <span class="text-white text-caption">{{ index + 1 }}</span>
                 </v-avatar>
                 Equipo {{ index + 1 }}
@@ -191,7 +191,7 @@
                   :key="player.id"
                   class="d-flex align-center mb-2"
                 >
-                  <v-avatar size="24" class="mr-2">
+                  <v-avatar class="mr-2" size="24">
                     <v-img
                       v-if="player.avatar"
                       alt="Avatar"
@@ -212,8 +212,8 @@
         <v-btn
           color="secondary"
           prepend-icon="mdi-plus"
-          variant="elevated"
           rounded="xl"
+          variant="elevated"
           @click="createNewTeam"
         >
           Crear nuevo equipo
@@ -224,172 +224,172 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
 
-// Props
-const props = defineProps({
-  participants: {
-    type: Array,
-    default: () => []
-  },
-  tournamentFormat: {
-    type: String,
-    default: '1v1'
-  },
-  teams: {
-    type: Array,
-    default: () => []
-  },
-  generatingTeams: {
-    type: Boolean,
-    default: false
-  },
-  gameTeams: {
-    type: Array,
-    default: () => []
-  }
-})
-
-// Emits
-const emit = defineEmits(['update:teams', 'generate-teams', 'update:team-generation-mode'])
-
-// Estado reactivo
-const teamGenerationMode = ref('automatic')
-const participantTeams = ref({}) // Mapeo de participante -> equipo
-const nextTeamId = ref(1)
-
-// Computed
-const availablePlayers = computed(() => {
-  const usedPlayers = new Set()
-  props.teams.forEach(team => {
-    team.forEach(player => usedPlayers.add(player.id))
-  })
-  return props.participants.filter(player => !usedPlayers.has(player.id))
-})
-
-// Equipos disponibles para asignación manual
-const availableTeams = computed(() => {
-  const teams = []
-  const maxTeams = Math.ceil(props.participants.length / 2)
-
-  for (let i = 1; i <= maxTeams; i++) {
-    teams.push({
-      id: i,
-      name: `Equipo ${i}`
-    })
-  }
-  return teams
-})
-
-// Métodos
-const generateTeams = () => {
-  emit('generate-teams')
-}
-
-const removeTeam = (index) => {
-  const newTeams = [...props.teams]
-  newTeams.splice(index, 1)
-  emit('update:teams', newTeams)
-}
-
-const getParticipantTeam = (participantId) => {
-  return participantTeams.value[participantId] || null
-}
-
-const getParticipantTeamName = (teamId) => {
-  const team = availableTeams.value.find(t => t.id === teamId)
-  return team ? team.name : 'Sin asignar'
-}
-
-const updateParticipantTeam = (participantId, teamId) => {
-  console.log('Actualizando equipo:', participantId, '->', teamId)
-  if (teamId) {
-    participantTeams.value[participantId] = teamId
-  } else {
-    delete participantTeams.value[participantId]
-  }
-}
-
-const createNewTeam = () => {
-  nextTeamId.value++
-}
-
-const applyManualTeams = () => {
-  console.log('Aplicando equipos manuales:', participantTeams.value)
-
-  // Agrupar participantes por equipo asignado
-  const teamGroups = {}
-
-  Object.entries(participantTeams.value).forEach(([participantId, teamId]) => {
-    if (!teamGroups[teamId]) {
-      teamGroups[teamId] = []
-    }
-    const participant = props.participants.find(p => p.id == participantId)
-    if (participant) {
-      teamGroups[teamId].push(participant)
-    }
+  // Props
+  const props = defineProps({
+    participants: {
+      type: Array,
+      default: () => [],
+    },
+    tournamentFormat: {
+      type: String,
+      default: '1v1',
+    },
+    teams: {
+      type: Array,
+      default: () => [],
+    },
+    generatingTeams: {
+      type: Boolean,
+      default: false,
+    },
+    gameTeams: {
+      type: Array,
+      default: () => [],
+    },
   })
 
-  // Crear equipos con los participantes asignados
-  const newTeams = Object.values(teamGroups).filter(team => team.length > 0)
+  // Emits
+  const emit = defineEmits(['update:teams', 'generate-teams', 'update:team-generation-mode'])
 
-  // Agregar participantes no asignados a equipos automáticos
-  const assignedParticipants = new Set(Object.keys(participantTeams.value))
-  const unassignedParticipants = props.participants.filter(p => !assignedParticipants.has(p.id.toString()))
+  // Estado reactivo
+  const teamGenerationMode = ref('automatic')
+  const participantTeams = ref({}) // Mapeo de participante -> equipo
+  const nextTeamId = ref(1)
 
-  // Crear equipos automáticos para los no asignados
-  for (let i = 0; i < unassignedParticipants.length; i += 2) {
-    const team = [unassignedParticipants[i]]
-    if (i + 1 < unassignedParticipants.length) {
-      team.push(unassignedParticipants[i + 1])
+  // Computed
+  const availablePlayers = computed(() => {
+    const usedPlayers = new Set()
+    for (const team of props.teams) {
+      for (const player of team) usedPlayers.add(player.id)
     }
-    newTeams.push(team)
-  }
+    return props.participants.filter(player => !usedPlayers.has(player.id))
+  })
 
-  console.log('Nuevos equipos:', newTeams)
-  emit('update:teams', newTeams)
-}
+  // Equipos disponibles para asignación manual
+  const availableTeams = computed(() => {
+    const teams = []
+    const maxTeams = Math.ceil(props.participants.length / 2)
 
-// Cargar equipos existentes al componente
-const loadExistingTeams = () => {
-  if (props.teams.length > 0) {
-    // Mapear equipos existentes a participantes
-    props.teams.forEach((team, teamIndex) => {
-      team.forEach(player => {
-        participantTeams.value[player.id] = teamIndex + 1
+    for (let i = 1; i <= maxTeams; i++) {
+      teams.push({
+        id: i,
+        name: `Equipo ${i}`,
       })
-    })
-  }
-}
+    }
+    return teams
+  })
 
-// Watch para emitir cambios en el modo de generación
-watch(teamGenerationMode, (newMode) => {
-  emit('update:team-generation-mode', newMode)
-})
-
-// Watch para resetear cuando cambia el formato
-watch(() => props.tournamentFormat, (newFormat, oldFormat) => {
-  console.log('Formato cambiado de', oldFormat, 'a', newFormat)
-  if (newFormat === '1v1') {
-    teamGenerationMode.value = 'automatic'
-    participantTeams.value = {}
-    emit('update:teams', [])
+  // Métodos
+  const generateTeams = () => {
+    emit('generate-teams')
   }
-}, { immediate: true })
 
-// Watch para cargar equipos existentes
-watch(() => props.teams, (newTeams) => {
-  if (newTeams.length > 0 && teamGenerationMode.value === 'manual') {
-    loadExistingTeams()
+  const removeTeam = index => {
+    const newTeams = [...props.teams]
+    newTeams.splice(index, 1)
+    emit('update:teams', newTeams)
   }
-}, { immediate: true })
 
-// Cargar equipos existentes al montar
-onMounted(() => {
-  if (props.teams.length > 0) {
-    loadExistingTeams()
+  const getParticipantTeam = participantId => {
+    return participantTeams.value[participantId] || null
   }
-})
+
+  const getParticipantTeamName = teamId => {
+    const team = availableTeams.value.find(t => t.id === teamId)
+    return team ? team.name : 'Sin asignar'
+  }
+
+  const updateParticipantTeam = (participantId, teamId) => {
+    console.log('Actualizando equipo:', participantId, '->', teamId)
+    if (teamId) {
+      participantTeams.value[participantId] = teamId
+    } else {
+      delete participantTeams.value[participantId]
+    }
+  }
+
+  const createNewTeam = () => {
+    nextTeamId.value++
+  }
+
+  const applyManualTeams = () => {
+    console.log('Aplicando equipos manuales:', participantTeams.value)
+
+    // Agrupar participantes por equipo asignado
+    const teamGroups = {}
+
+    for (const [participantId, teamId] of Object.entries(participantTeams.value)) {
+      if (!teamGroups[teamId]) {
+        teamGroups[teamId] = []
+      }
+      const participant = props.participants.find(p => p.id == participantId)
+      if (participant) {
+        teamGroups[teamId].push(participant)
+      }
+    }
+
+    // Crear equipos con los participantes asignados
+    const newTeams = Object.values(teamGroups).filter(team => team.length > 0)
+
+    // Agregar participantes no asignados a equipos automáticos
+    const assignedParticipants = new Set(Object.keys(participantTeams.value))
+    const unassignedParticipants = props.participants.filter(p => !assignedParticipants.has(p.id.toString()))
+
+    // Crear equipos automáticos para los no asignados
+    for (let i = 0; i < unassignedParticipants.length; i += 2) {
+      const team = [unassignedParticipants[i]]
+      if (i + 1 < unassignedParticipants.length) {
+        team.push(unassignedParticipants[i + 1])
+      }
+      newTeams.push(team)
+    }
+
+    console.log('Nuevos equipos:', newTeams)
+    emit('update:teams', newTeams)
+  }
+
+  // Cargar equipos existentes al componente
+  const loadExistingTeams = () => {
+    if (props.teams.length > 0) {
+      // Mapear equipos existentes a participantes
+      for (const [teamIndex, team] of props.teams.entries()) {
+        for (const player of team) {
+          participantTeams.value[player.id] = teamIndex + 1
+        }
+      }
+    }
+  }
+
+  // Watch para emitir cambios en el modo de generación
+  watch(teamGenerationMode, newMode => {
+    emit('update:team-generation-mode', newMode)
+  })
+
+  // Watch para resetear cuando cambia el formato
+  watch(() => props.tournamentFormat, (newFormat, oldFormat) => {
+    console.log('Formato cambiado de', oldFormat, 'a', newFormat)
+    if (newFormat === '1v1') {
+      teamGenerationMode.value = 'automatic'
+      participantTeams.value = {}
+      emit('update:teams', [])
+    }
+  }, { immediate: true })
+
+  // Watch para cargar equipos existentes
+  watch(() => props.teams, newTeams => {
+    if (newTeams.length > 0 && teamGenerationMode.value === 'manual') {
+      loadExistingTeams()
+    }
+  }, { immediate: true })
+
+  // Cargar equipos existentes al montar
+  onMounted(() => {
+    if (props.teams.length > 0) {
+      loadExistingTeams()
+    }
+  })
 </script>
 
 <style scoped>

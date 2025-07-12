@@ -28,7 +28,7 @@
             <div class="flex-grow-1">
               <h1 class="text-h4 font-weight-bold mb-2">Editar Torneo</h1>
               <p class="text-body-1 text-grey-darken-1">
-                Modifica la información del torneo "{{ tournament.name }}"
+                Configura "{{ tournament.name }}"
               </p>
             </div>
           </div>
@@ -72,79 +72,12 @@
               </v-alert>
 
               <div v-if="!tournamentHasMatches">
-                <v-row>
-                  <v-col cols="12" md="6">
-                    <v-text-field
-                      v-model="searchQuery"
-                      class="mb-4"
-                      label="Buscar jugadores"
-                      prepend-inner-icon="mdi-magnify"
-                      rounded="xl"
-                      variant="outlined"
-                    />
-                  </v-col>
-                </v-row>
-
-                <!-- Jugadores disponibles -->
-                <v-card class="mb-4" variant="outlined">
-                  <v-card-title class="text-subtitle-1">
-                    Jugadores disponibles ({{ filteredAvailablePlayers.length }})
-                  </v-card-title>
-                  <v-card-text>
-                    <div v-if="filteredAvailablePlayers.length === 0" class="text-center py-8">
-                      <v-icon class="mb-4" color="grey-lighten-1" size="48">
-                        mdi-account-group
-                      </v-icon>
-                      <h4 class="text-h6 text-grey-darken-1 mb-2">
-                        No hay jugadores disponibles
-                      </h4>
-                      <p class="text-body-2 text-grey-darken-1">
-                        Todos los jugadores han sido seleccionados o no hay jugadores en el sistema.
-                      </p>
-                    </div>
-                    <div v-else class="players-grid">
-                      <PlayerCard
-                        v-for="player in filteredAvailablePlayers"
-                        :key="player.id"
-                        :is-selected="false"
-                        :player="player"
-                        @toggle-selection="addParticipant"
-                      />
-                    </div>
-                  </v-card-text>
-                </v-card>
-
-                <!-- Participantes seleccionados -->
-                <v-card variant="outlined">
-                  <v-card-title class="text-subtitle-1">
-                    Participantes seleccionados ({{ participants.length }})
-                  </v-card-title>
-                  <v-card-text>
-                    <div v-if="participants.length === 0" class="text-center py-8">
-                      <v-icon class="mb-4" color="grey-lighten-1" size="48">
-                        mdi-account-group
-                      </v-icon>
-                      <h4 class="text-h6 text-grey-darken-1 mb-2">
-                        No hay participantes
-                      </h4>
-                      <p class="text-body-2 text-grey-darken-1">
-                        Selecciona jugadores de la lista superior para agregarlos al torneo.
-                      </p>
-                    </div>
-                    <div v-else class="players-grid">
-                      <PlayerCard
-                        v-for="player in participants"
-                        :key="player.id"
-                        :is-selected="true"
-                        :player="player"
-                        @toggle-selection="removeParticipant"
-                      />
-                    </div>
-                  </v-card-text>
-                </v-card>
+                <TournamentParticipants
+                  :all-players="allPlayers"
+                  :participants="participants"
+                  @update:participants="updateParticipants"
+                />
               </div>
-
-              <!-- Vista de solo lectura si hay partidos -->
               <div v-else>
                 <v-card variant="outlined">
                   <v-card-title class="text-subtitle-1">
@@ -169,13 +102,12 @@
           <!-- Tab de configuración de equipos -->
           <v-window-item value="teams">
             <v-card-text class="pa-6">
-              <TeamConfiguration
-                :generating-teams="generatingTeams"
+              <TournamentTeamConfiguration
                 :participants="participants"
                 :teams="teams"
                 :tournament-format="tournamentData.format"
-                @generate-teams="generateTeams"
-                @update:team-generation-mode="updateTeamGenerationMode"
+                @format-change="updateTournamentFormat"
+                @update:team-assignments="updateTeamAssignments"
                 @update:teams="updateTeams"
               />
             </v-card-text>
@@ -208,8 +140,9 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import PlayerCard from '@/components/PlayerCard.vue'
-  import TeamConfiguration from '@/components/TeamConfiguration.vue'
   import TournamentForm from '@/components/TournamentForm.vue'
+  import TournamentParticipants from '@/components/TournamentParticipants.vue'
+  import TournamentTeamConfiguration from '@/components/TournamentTeamConfiguration.vue'
   import { samplePlayers } from '@/data/sampleData'
   import { handleApiError, playerAPI, tournamentAPI } from '@/services/api'
   import { useAppStore } from '@/stores/app'
@@ -228,7 +161,6 @@
   const saving = ref(false)
   const formValid = ref(false)
   const error = ref(null)
-  const searchQuery = ref('')
 
   // Datos del torneo
   const tournament = ref(null)
@@ -236,9 +168,9 @@
     name: '',
     format: '1v1',
     total_teams: 8,
-    teams_per_group: 4,
     has_group_stage: false,
     has_knockout: true,
+    teams_per_group: 4,
     rules: '',
   })
 
@@ -248,31 +180,14 @@
 
   // Equipos
   const teams = ref([])
-  const generatingTeams = ref(false)
-  const teamGenerationMode = ref('automatic')
+  const teamAssignments = ref({})
 
   // Estado del torneo
   const tournamentHasMatches = ref(false)
 
   // Computed
-  const filteredAvailablePlayers = computed(() => {
-    const selectedIds = new Set(participants.value.map(p => p.id))
-    let available = allPlayers.value.filter(player => !selectedIds.has(player.id))
-
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      available = available.filter(player =>
-        player.display_name.toLowerCase().includes(query),
-      )
-    }
-
-    return available
-  })
-
   const canSaveChanges = computed(() => {
-    return formValid.value
-      && participants.value.length > 1
-      && (tournamentData.value.format === '1v1' || teams.value.length > 0)
+    return formValid.value && participants.value.length > 1
   })
 
   // Cargar torneo
@@ -289,9 +204,9 @@
         name: tournament.value.name || '',
         format: tournament.value.format || '1v1',
         total_teams: tournament.value.total_teams || 8,
-        teams_per_group: tournament.value.teams_per_group || 4,
         has_group_stage: tournament.value.has_group_stage || false,
         has_knockout: tournament.value.has_knockout === undefined ? true : tournament.value.has_knockout,
+        teams_per_group: tournament.value.teams_per_group || 4,
         rules: tournament.value.rules || '',
       }
 
@@ -303,8 +218,8 @@
         tournamentHasMatches.value = false
       }
 
-      // Cargar participantes (simulado por ahora)
-      participants.value = samplePlayers.slice(0, 8)
+      // Cargar participantes del torneo
+      await loadTournamentParticipants(tournamentId)
     } catch (error_) {
       const errorInfo = handleApiError(error_)
       error.value = errorInfo.message
@@ -312,6 +227,38 @@
       console.error('Error al cargar torneo:', errorInfo.message)
     } finally {
       loading.value = false
+    }
+  }
+
+  // Cargar participantes del torneo
+  const loadTournamentParticipants = async tournamentId => {
+    try {
+      // Intentar cargar participantes reales del torneo
+      try {
+        const entriesResponse = await tournamentAPI.getTeamEntries(tournamentId)
+        const entries = entriesResponse.data
+
+        // Extraer participantes únicos de las entradas
+        const participantMap = new Map()
+        for (const entry of entries) {
+          if (entry.players) {
+            for (const player of entry.players) {
+              if (!participantMap.has(player.id)) {
+                participantMap.set(player.id, player)
+              }
+            }
+          }
+        }
+
+        participants.value = Array.from(participantMap.values())
+      } catch {
+        console.log('No se pudieron cargar participantes del torneo, usando datos de ejemplo')
+        // Usar datos de ejemplo si no se pueden cargar los reales
+        participants.value = samplePlayers.slice(0, 8)
+      }
+    } catch (error) {
+      console.error('Error al cargar participantes:', error)
+      participants.value = samplePlayers.slice(0, 8)
     }
   }
 
@@ -326,53 +273,35 @@
   }
 
   // Métodos de participantes
-  const addParticipant = player => {
-    if (!tournamentHasMatches.value && !participants.value.some(p => p.id === player.id)) {
-      participants.value.push(player)
-    }
+  const updateParticipants = newParticipants => {
+    participants.value = newParticipants
   }
 
-  const removeParticipant = player => {
-    if (!tournamentHasMatches.value) {
-      const index = participants.value.findIndex(p => p.id === player.id)
-      if (index !== -1) {
-        participants.value.splice(index, 1)
-      }
-    }
-  }
-
+  // Métodos de equipos
   const updateTeams = newTeams => {
     teams.value = newTeams
   }
 
-  const updateTeamGenerationMode = mode => {
-    teamGenerationMode.value = mode
+  const updateTeamAssignments = newAssignments => {
+    teamAssignments.value = newAssignments
   }
 
-  const generateTeams = () => {
-    generatingTeams.value = true
-    setTimeout(() => {
-      const shuffled = [...participants.value].sort(() => Math.random() - 0.5)
-      teams.value = []
-
-      for (let i = 0; i < shuffled.length; i += 2) {
-        if (i + 1 < shuffled.length) {
-          teams.value.push([shuffled[i], shuffled[i + 1]])
-        } else {
-          teams.value.push([shuffled[i]])
-        }
-      }
-
-      generatingTeams.value = false
-    }, 1000)
+  const updateTournamentFormat = newFormat => {
+    tournamentData.value.format = newFormat
   }
 
   // Guardar cambios
   const saveTournament = async () => {
     saving.value = true
     try {
+      // Actualizar datos del torneo
       const formData = tournamentFormRef.value.getFormData()
       await tournamentAPI.updateTournament(tournament.value.id, formData)
+
+      // Si no hay partidos generados, actualizar participantes
+      if (!tournamentHasMatches.value) {
+        await updateTournamentParticipants()
+      }
 
       appStore.showSuccess('Torneo actualizado exitosamente')
       router.push(`/tournaments/${tournament.value.id}`)
@@ -382,6 +311,31 @@
       console.error('Error al actualizar torneo:', errorInfo.message)
     } finally {
       saving.value = false
+    }
+  }
+
+  // Actualizar participantes del torneo
+  const updateTournamentParticipants = async () => {
+    try {
+      const tournamentId = tournament.value.id
+
+      // Eliminar entradas existentes
+      const existingEntries = await tournamentAPI.getTeamEntries(tournamentId)
+      for (const entry of existingEntries.data) {
+        await tournamentAPI.deleteTeamEntry(entry.id)
+      }
+
+      // Crear nuevas entradas para cada participante
+      for (const participant of participants.value) {
+        await tournamentAPI.createTeamEntry(tournamentId, {
+          players: [participant.id],
+        })
+      }
+
+      console.log('Participantes actualizados exitosamente')
+    } catch (error) {
+      console.error('Error al actualizar participantes:', error)
+      throw error
     }
   }
 
