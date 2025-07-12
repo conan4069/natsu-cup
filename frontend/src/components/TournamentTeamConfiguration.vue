@@ -36,37 +36,86 @@
           </div>
           <div v-else>
             <!-- Lista de participantes con equipos asignados -->
-            <v-list>
-              <v-list-item
+            <div class="participants-grid">
+              <v-card
                 v-for="participant in participants"
                 :key="participant.id"
+                class="participant-card mb-4"
+                variant="outlined"
               >
-                <template #prepend>
-                  <v-avatar size="32">
-                    <v-img
-                      v-if="participant.avatar"
-                      alt="Avatar"
-                      :src="participant.avatar"
-                    />
-                    <v-icon v-else>mdi-account</v-icon>
-                  </v-avatar>
-                </template>
-                <v-list-item-title>{{ participant.display_name }}</v-list-item-title>
-                <template #append>
-                  <v-select
-                    v-model="participantTeamAssignments[participant.id]"
-                    density="compact"
-                    item-title="name"
-                    item-value="id"
-                    :items="availableTeams"
-                    label="Equipo"
-                    rounded="xl"
-                    variant="outlined"
-                    @update:model-value="updateTeamAssignment"
-                  />
-                </template>
-              </v-list-item>
-            </v-list>
+                <v-card-text>
+                  <div class="d-flex align-center mb-3">
+                    <v-avatar class="mr-3" size="40">
+                      <v-img
+                        v-if="participant.avatar"
+                        alt="Avatar"
+                        :src="participant.avatar"
+                      />
+                      <v-icon v-else>mdi-account</v-icon>
+                    </v-avatar>
+                    <div class="flex-grow-1">
+                      <h4 class="text-h6 mb-1">{{ participant.display_name }}</h4>
+                      <p class="text-body-2 text-grey-darken-1 mb-0">
+                        Participante
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Equipo asignado -->
+                  <div class="team-assignment">
+                    <h5 class="text-subtitle-2 mb-2">Equipo asignado:</h5>
+                    <div v-if="participantTeamAssignments[participant.id]" class="selected-team">
+                      <v-chip
+                        class="mb-2"
+                        color="primary"
+                        size="large"
+                        variant="elevated"
+                      >
+                        {{ getTeamName(participantTeamAssignments[participant.id]) }}
+                      </v-chip>
+                      <v-btn
+                        color="error"
+                        prepend-icon="mdi-close"
+                        rounded="xl"
+                        size="small"
+                        variant="outlined"
+                        @click="removeTeamAssignment(participant.id)"
+                      >
+                        Quitar equipo
+                      </v-btn>
+                    </div>
+                    <div v-else class="no-team">
+                      <v-alert class="mb-3" type="info" variant="tonal">
+                        <strong>Sin equipo asignado</strong>
+                      </v-alert>
+
+                      <!-- Lista de equipos disponibles -->
+                      <div class="available-teams">
+                        <h6 class="text-caption mb-2">Equipos disponibles:</h6>
+                        <div class="teams-grid">
+                          <v-card
+                            v-for="team in availableTeamsForSelection"
+                            :key="team.id"
+                            class="team-option-card"
+                            variant="outlined"
+                            @click="updateTeamAssignment(participant.id, team.id)"
+                          >
+                            <v-card-text class="text-center pa-3">
+                              <v-icon class="mb-2" color="primary" size="24">
+                                mdi-shield
+                              </v-icon>
+                              <div class="text-body-2 font-weight-medium">
+                                {{ team.name }}
+                              </div>
+                            </v-card-text>
+                          </v-card>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </div>
 
             <!-- Botón para crear equipos faltantes -->
             <div v-if="missingTeamsCount > 0" class="mt-4">
@@ -193,11 +242,11 @@
                     density="compact"
                     item-title="name"
                     item-value="id"
-                    :items="availableTeams"
+                    :items="availableTeamsForSelection"
                     label="Equipo del juego"
                     rounded="xl"
                     variant="outlined"
-                    @update:model-value="updateTeamGameTeamAssignment"
+                    @update:model-value="(value) => updateTeamGameTeamAssignment(index, value)"
                   />
                 </div>
               </v-card-text>
@@ -210,9 +259,9 @@
 </template>
 
 <script setup>
-  import { computed, ref, watch } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
-  import { gameTeamAPI } from '@/services/api'
+  import { gameTeamAPI, tournamentAPI } from '@/services/api'
 
   // Props
   const props = defineProps({
@@ -224,10 +273,14 @@
       type: String,
       default: '1v1',
     },
+    tournamentId: {
+      type: [String, Number],
+      required: true,
+    },
   })
 
   // Emits
-  const emit = defineEmits(['update:teams', 'update:team-assignments'])
+  const emit = defineEmits(['update:teams', 'update:team-assignments', 'update:team-entries'])
 
   // Router
   const router = useRouter()
@@ -239,6 +292,7 @@
   const assigningTeams = ref(false)
   const participantTeamAssignments = ref({})
   const teamGameTeamAssignments = ref({})
+  const existingEntries = ref([])
 
   // Computed
   const availableForGrouping = computed(() => {
@@ -254,6 +308,52 @@
     return Math.max(0, props.participants.length - availableTeams.value.length)
   })
 
+  // Computed para equipos disponibles (excluyendo los ya seleccionados)
+  const availableTeamsForSelection = computed(() => {
+    const selectedTeamIds = new Set()
+
+    // Agregar equipos seleccionados en formato 1v1
+    for (const teamId of Object.values(participantTeamAssignments.value)) {
+      if (teamId) selectedTeamIds.add(teamId)
+    }
+
+    // Agregar equipos seleccionados en formato 2v2
+    for (const teamId of Object.values(teamGameTeamAssignments.value)) {
+      if (teamId) selectedTeamIds.add(teamId)
+    }
+
+    return availableTeams.value.filter(team => !selectedTeamIds.has(team.id))
+  })
+
+  // Computed para generar las entradas de equipos en formato correcto para la API
+  const teamEntries = computed(() => {
+    const entries = []
+
+    if (props.tournamentFormat === '1v1') {
+      // Para formato 1v1, cada participante es una entrada individual
+      for (const participant of props.participants) {
+        const teamId = participantTeamAssignments.value[participant.id]
+        entries.push({
+          players: [participant.id],
+          assigned_team: teamId || null,
+          // NO incluir tournament aquí - el backend lo maneja automáticamente
+        })
+      }
+    } else if (props.tournamentFormat === '2v2') {
+      // Para formato 2v2, cada equipo formado es una entrada
+      for (const [index, team] of teams.value.entries()) {
+        const teamId = teamGameTeamAssignments.value[index]
+        entries.push({
+          players: team.map(player => player.id),
+          assigned_team: teamId || null,
+          // NO incluir tournament aquí - el backend lo maneja automáticamente
+        })
+      }
+    }
+
+    return entries
+  })
+
   // Métodos
   const loadGameTeams = async () => {
     try {
@@ -265,20 +365,44 @@
     }
   }
 
-  const assignTeamsRandomly = async () => {
-    assigningTeams.value = true
+  // Cargar entradas existentes del torneo
+  const loadExistingEntries = async () => {
     try {
-      // Simular asignación aleatoria
-      const shuffled = [...props.participants].sort(() => Math.random() - 0.5)
-      const assignments = {}
+      const response = await tournamentAPI.getTeamEntries(props.tournamentId)
+      existingEntries.value = response.data
 
-      for (const [i, element] of shuffled.entries()) {
-        const teamIndex = i % availableTeams.value.length
-        assignments[element.id] = availableTeams.value[teamIndex].id
+      // Mapear las asignaciones existentes
+      const assignments = {}
+      for (const entry of existingEntries.value) {
+        if (entry.players && entry.players.length > 0) {
+          for (const player of entry.players) {
+            assignments[player.id] = entry.assigned_team?.id || null
+          }
+        }
       }
 
       participantTeamAssignments.value = assignments
       emit('update:team-assignments', assignments)
+      emit('update:team-entries', teamEntries.value)
+
+      console.log('Entradas existentes cargadas:', existingEntries.value)
+    } catch (error) {
+      console.error('Error al cargar entradas existentes:', error)
+    }
+  }
+
+  const assignTeamsRandomly = async () => {
+    assigningTeams.value = true
+    try {
+      // Llamar a la API del backend para asignar equipos aleatoriamente
+      await tournamentAPI.assignRandomTeams(props.tournamentId)
+
+      // Recargar las entradas para ver los cambios
+      await loadExistingEntries()
+
+      console.log('Equipos asignados aleatoriamente')
+    } catch (error) {
+      console.error('Error al asignar equipos aleatoriamente:', error)
     } finally {
       assigningTeams.value = false
     }
@@ -287,6 +411,24 @@
   const updateTeamAssignment = (participantId, teamId) => {
     participantTeamAssignments.value[participantId] = teamId
     emit('update:team-assignments', participantTeamAssignments.value)
+    emit('update:team-entries', teamEntries.value)
+  }
+
+  // Métodos auxiliares para mostrar el nombre del equipo
+  const getTeamName = teamId => {
+    const team = availableTeams.value.find(t => t.id === teamId)
+    return team ? team.name : teamId
+  }
+
+  const removeTeamAssignment = participantId => {
+    participantTeamAssignments.value[participantId] = null
+    emit('update:team-assignments', participantTeamAssignments.value)
+    emit('update:team-entries', teamEntries.value)
+  }
+
+  const removeGameTeamAssignment = teamIndex => {
+    teamGameTeamAssignments.value[teamIndex] = null
+    emit('update:team-entries', teamEntries.value)
   }
 
   const generateTeams = () => {
@@ -305,6 +447,7 @@
 
       teams.value = newTeams
       emit('update:teams', newTeams)
+      emit('update:team-entries', teamEntries.value)
       generatingTeams.value = false
     }, 1000)
   }
@@ -320,24 +463,39 @@
 
   const updateTeamGameTeamAssignment = (teamIndex, gameTeamId) => {
     teamGameTeamAssignments.value[teamIndex] = gameTeamId
+    emit('update:team-entries', teamEntries.value)
   }
 
   const goToCreateTeams = () => {
     router.push('/teams/create')
   }
 
-  // Cargar equipos del juego al montar
-  loadGameTeams()
+  // Cargar datos al montar
+  onMounted(async () => {
+    await loadGameTeams()
+    await loadExistingEntries()
+  })
 
-  // Observar cambios en participantes para formato 2v2
-  watch(() => props.participants, newParticipants => {
-    if (props.tournamentFormat === '2v2' && newParticipants.length % 2 !== 0) {
-      // Cambiar automáticamente a 1v1 si hay participantes impares
-      emit('format-change', '1v1')
-    }
-  }, { immediate: true })
+  // Observar cambios en teamEntries para emitir actualizaciones
+  watch(teamEntries, newEntries => {
+    emit('update:team-entries', newEntries)
+  }, { deep: true })
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
+.participants-grid,
+.teams-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.participant-card,
+.team-option-card {
+  min-width: 220px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+.team-option-card:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
 </style>

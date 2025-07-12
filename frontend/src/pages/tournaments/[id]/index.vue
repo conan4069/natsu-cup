@@ -70,7 +70,25 @@
                   </div>
                   <div class="mb-3">
                     <span class="text-body-2 text-grey-darken-1">Equipos:</span>
-                    <div class="font-weight-medium">{{ tournament.team_count || 0 }}</div>
+                    <div class="font-weight-medium">{{ tournament.team_count || tournament.total_teams || 0 }}</div>
+                  </div>
+                  <div class="mb-3">
+                    <span class="text-body-2 text-grey-darken-1">Estado:</span>
+                    <div>
+                      <v-chip
+                        :color="getStatusColor(tournament.status)"
+                        size="small"
+                        variant="outlined"
+                      >
+                        {{ getStatusText(tournament.status) }}
+                      </v-chip>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <span class="text-body-2 text-grey-darken-1">Fecha de creación:</span>
+                    <div class="font-weight-medium">
+                      {{ tournament.created_at ? new Date(tournament.created_at).toLocaleDateString() : 'N/A' }}
+                    </div>
                   </div>
                 </v-col>
                 <v-col cols="6">
@@ -106,7 +124,9 @@
             </v-card-title>
             <v-card-text>
               <div class="d-flex flex-column gap-3">
+                <!-- Mostrar botones según el tipo de competición -->
                 <v-btn
+                  v-if="shouldShowGroups"
                   block
                   color="primary"
                   prepend-icon="mdi-play"
@@ -117,6 +137,18 @@
                 </v-btn>
 
                 <v-btn
+                  v-if="shouldShowLeague"
+                  block
+                  color="primary"
+                  prepend-icon="mdi-chart-line"
+                  variant="elevated"
+                  @click="goToLeague"
+                >
+                  Liga
+                </v-btn>
+
+                <v-btn
+                  v-if="shouldShowBracket"
                   block
                   color="warning"
                   prepend-icon="mdi-trophy"
@@ -201,7 +233,7 @@
 </template>
 
 <script setup>
-  import { onMounted, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { handleApiError, matchAPI, tournamentAPI } from '@/services/api'
 
@@ -269,27 +301,64 @@
     }
   }
 
-  const goToGroups = () => {
-    router.push(`/tournaments/${tournament.value.id}/groups`)
-  }
-
-  const goToBracket = () => {
-    router.push(`/tournaments/${tournament.value.id}/bracket`)
-  }
-
+  // Agregar las funciones de navegación faltantes
   const manageTeams = () => {
-    // Aquí podrías navegar a una página de gestión de equipos
-    console.log('Gestionar equipos')
+    router.push(`/tournaments/${route.params.id}/teams`)
   }
 
   const viewStats = () => {
-    // Aquí podrías navegar a una página de estadísticas
-    console.log('Ver estadísticas')
+    router.push(`/tournaments/${route.params.id}/stats`)
+  }
+
+  const goToGroups = () => {
+    router.push(`/tournaments/${route.params.id}/groups`)
+  }
+
+  const goToBracket = () => {
+    router.push(`/tournaments/${route.params.id}/bracket`)
+  }
+
+  const goToLeague = () => {
+    router.push(`/tournaments/${route.params.id}/league`)
   }
 
   // Cargar datos al montar el componente
   onMounted(() => {
     loadTournament()
+  })
+
+  // Agregar métodos para manejar estados
+  const getStatusColor = status => {
+    const colors = {
+      draft: 'grey',
+      active: 'warning',
+      completed: 'success',
+      cancelled: 'error',
+    }
+    return colors[status] || 'grey'
+  }
+
+  const getStatusText = status => {
+    const texts = {
+      draft: 'Borrador',
+      active: 'En progreso',
+      completed: 'Completado',
+      cancelled: 'Cancelado',
+    }
+    return texts[status] || 'Desconocido'
+  }
+
+  // Agregar computed properties
+  const shouldShowGroups = computed(() => {
+    return tournament.value?.competition_type === 'groups' || tournament.value?.has_group_stage
+  })
+
+  const shouldShowLeague = computed(() => {
+    return tournament.value?.competition_type === 'league' || tournament.value?.competition_type === 'hybrid'
+  })
+
+  const shouldShowBracket = computed(() => {
+    return tournament.value?.competition_type === 'cup' || tournament.value?.has_knockout
   })
 </script>
 

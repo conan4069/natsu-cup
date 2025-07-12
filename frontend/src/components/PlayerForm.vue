@@ -3,16 +3,16 @@
     <!-- Nombre del jugador -->
     <v-text-field
       v-model="form.display_name"
+      class="mb-4"
+      color="primary"
       label="Nombre del jugador"
       placeholder="Ej: Eliezer Hijo Mio"
-      variant="outlined"
-      :rules="nameRules"
-      required
       prepend-inner-icon="mdi-account"
-      class="mb-4"
-      rounded="xl"
-      color="primary"
       :readonly="readonly || mode === 'view'"
+      required
+      rounded="xl"
+      :rules="nameRules"
+      variant="outlined"
     />
 
     <!-- Avatar actual (solo en modo edición) -->
@@ -21,27 +21,27 @@
     <div
       v-if="!readonly && mode !== 'view'"
       class="mb-6 dropzone"
+      @click="triggerFileInput"
       @dragover.prevent
       @drop.prevent="onDrop"
-      @click="triggerFileInput"
     >
       <div class="dropzone-content">
-        <v-icon size="40" color="grey">mdi-cloud-upload</v-icon>
+        <v-icon color="grey" size="40">mdi-cloud-upload</v-icon>
         <span>Arrastra y suelta la imagen aquí</span>
         <input
-          type="file"
+          ref="fileInput"
           accept="image/*"
           style="display: none"
+          type="file"
           @change="onFileChange"
-          ref="fileInput"
-        />
+        >
       </div>
     </div>
 
     <div v-if="avatarPreview" class="mb-4" style="display: flex; flex-direction: column; align-items: center;">
       <p class="text-body-2 text-grey-darken-1 mb-2" style="text-align: center;">Avatar actual</p>
       <v-avatar size="80">
-        <v-img :src="avatarPreview" alt="Preview del avatar" />
+        <v-img alt="Preview del avatar" :src="avatarPreview" />
       </v-avatar>
     </div>
 
@@ -57,155 +57,155 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
 
-// Props
-const props = defineProps({
-  player: {
-    type: Object,
-    default: null
-  },
-  mode: {
-    type: String,
-    default: 'create', // 'create' | 'edit' | 'view'
-    validator: value => ['create', 'edit', 'view'].includes(value)
-  },
-  readonly: {
-    type: Boolean,
-    default: false
-  }
-})
+  // Props
+  const props = defineProps({
+    player: {
+      type: Object,
+      default: null,
+    },
+    mode: {
+      type: String,
+      default: 'create', // 'create' | 'edit' | 'view'
+      validator: value => ['create', 'edit', 'view'].includes(value),
+    },
+    readonly: {
+      type: Boolean,
+      default: false,
+    },
+  })
 
-// Emits
-const emit = defineEmits(['update:form', 'submit', 'valid-change'])
+  // Emits
+  const emit = defineEmits(['update:form', 'submit', 'valid-change'])
 
-// Referencias
-const formRef = ref(null)
-const valid = ref(false)
-const avatarPreview = ref(null)
-const fileInput = ref(null)
+  // Referencias
+  const formRef = ref(null)
+  const valid = ref(false)
+  const avatarPreview = ref(null)
+  const fileInput = ref(null)
 
-// Formulario reactivo
-const form = ref({
-  display_name: '',
-  avatar: null,
-  nickname: ''
-})
-
-// Reglas de validación
-const nameRules = [
-  v => !!v || 'El nombre es requerido',
-  v => v.length >= 2 || 'El nombre debe tener al menos 2 caracteres',
-  v => v.length <= 100 || 'El nombre no puede exceder 100 caracteres'
-]
-
-const avatarRules = [
-  v => !v || v.size <= 5 * 1024 * 1024 || 'El archivo no puede exceder 5MB'
-]
-
-// Computed para determinar si el formulario está en modo solo lectura
-const isReadOnly = computed(() => props.mode === 'view')
-
-// Preview del avatar
-watch(() => form.value.avatar, file => {
-  if (file && file instanceof File) {
-    const reader = new FileReader()
-    reader.addEventListener('load', e => {
-      avatarPreview.value = e.target.result
-    })
-    reader.readAsDataURL(file)
-  } else {
-    avatarPreview.value = null
-  }
-})
-
-// Emitir cambios del formulario
-watch(form, (newForm) => {
-  emit('update:form', newForm)
-}, { deep: true })
-
-// Emitir cambios de validación
-watch(valid, (newValid) => {
-  emit('valid-change', newValid)
-})
-
-// Cargar datos del jugador si está en modo edición
-onMounted(() => {
-  if (props.player && props.mode === 'edit') {
-    form.value = {
-      display_name: props.player.display_name || '',
-      avatar: null,
-      nickname: props.player.nickname || ''
-    }
-  }
-})
-
-// Métodos expuestos
-const validate = () => {
-  return formRef.value?.validate()
-}
-
-const reset = () => {
-  formRef.value?.reset()
-  form.value = {
+  // Formulario reactivo
+  const form = ref({
     display_name: '',
     avatar: null,
-    nickname: ''
-  }
-  avatarPreview.value = null
-}
+    nickname: '',
+  })
 
-const getFormData = () => {
-  const formData = new FormData()
-  formData.append('display_name', form.value.display_name)
+  // Reglas de validación
+  const nameRules = [
+    v => !!v || 'El nombre es requerido',
+    v => v.length >= 2 || 'El nombre debe tener al menos 2 caracteres',
+    v => v.length <= 100 || 'El nombre no puede exceder 100 caracteres',
+  ]
 
-  if (form.value.avatar) {
-    formData.append('avatar', form.value.avatar)
-  }
+  const avatarRules = [
+    v => !v || v.size <= 5 * 1024 * 1024 || 'El archivo no puede exceder 5MB',
+  ]
 
-  if (form.value.nickname) {
-    formData.append('nickname', form.value.nickname)
-  }
+  // Computed para determinar si el formulario está en modo solo lectura
+  const isReadOnly = computed(() => props.mode === 'view')
 
-  return formData
-}
-
-const triggerFileInput = () => {
-  fileInput.value && fileInput.value.click()
-}
-
-const onFileChange = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    form.value.avatar = file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      avatarPreview.value = e.target.result
+  // Preview del avatar
+  watch(() => form.value.avatar, file => {
+    if (file && file instanceof File) {
+      const reader = new FileReader()
+      reader.addEventListener('load', e => {
+        avatarPreview.value = e.target.result
+      })
+      reader.readAsDataURL(file)
+    } else {
+      avatarPreview.value = null
     }
-    reader.readAsDataURL(file)
-  }
-}
+  })
 
-const onDrop = (event) => {
-  const file = event.dataTransfer.files[0]
-  if (file) {
-    form.value.avatar = file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      avatarPreview.value = e.target.result
+  // Emitir cambios del formulario
+  watch(form, newForm => {
+    emit('update:form', newForm)
+  }, { deep: true })
+
+  // Emitir cambios de validación
+  watch(valid, newValid => {
+    emit('valid-change', newValid)
+  })
+
+  // Cargar datos del jugador si está en modo edición
+  onMounted(() => {
+    if (props.player && props.mode === 'edit') {
+      form.value = {
+        display_name: props.player.display_name || '',
+        avatar: null,
+        nickname: props.player.nickname || '',
+      }
     }
-    reader.readAsDataURL(file)
-  }
-}
+  })
 
-// Exponer métodos
-defineExpose({
-  validate,
-  reset,
-  getFormData,
-  form: form.value,
-  valid
-})
+  // Métodos expuestos
+  const validate = () => {
+    return formRef.value?.validate()
+  }
+
+  const reset = () => {
+    formRef.value?.reset()
+    form.value = {
+      display_name: '',
+      avatar: null,
+      nickname: '',
+    }
+    avatarPreview.value = null
+  }
+
+  const getFormData = () => {
+    const formData = new FormData()
+    formData.append('display_name', form.value.display_name)
+
+    if (form.value.avatar) {
+      formData.append('avatar', form.value.avatar)
+    }
+
+    if (form.value.nickname) {
+      formData.append('nickname', form.value.nickname)
+    }
+
+    return formData
+  }
+
+  const triggerFileInput = () => {
+    fileInput.value && fileInput.value.click()
+  }
+
+  const onFileChange = event => {
+    const file = event.target.files[0]
+    if (file) {
+      form.value.avatar = file
+      const reader = new FileReader()
+      reader.addEventListener('load', e => {
+        avatarPreview.value = e.target.result
+      })
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const onDrop = event => {
+    const file = event.dataTransfer.files[0]
+    if (file) {
+      form.value.avatar = file
+      const reader = new FileReader()
+      reader.addEventListener('load', e => {
+        avatarPreview.value = e.target.result
+      })
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Exponer métodos
+  defineExpose({
+    validate,
+    reset,
+    getFormData,
+    form: form.value,
+    valid,
+  })
 </script>
 
 <style scoped>

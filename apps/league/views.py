@@ -14,6 +14,10 @@ from .brackets import (
     generate_knockout_bracket,
     generate_playoffs_for_missing_slots,
 )
+from .utils import (
+    update_player_stats, update_team_stats, update_tournament_status,
+    generate_league_matches, update_tournament_standings
+)
 
 import random
 
@@ -27,15 +31,15 @@ class TournamentDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TournamentSerializer
 
 class TeamEntryListCreateView(generics.ListCreateAPIView):
-  serializer_class = TeamEntrySerializer
+    serializer_class = TeamEntrySerializer
 
-  def get_queryset(self):
-    tournament_id = self.kwargs.get('tournament_id')
-    return TeamEntry.objects.filter(tournament_id=tournament_id)
+    def get_queryset(self):
+        tournament_id = self.kwargs.get('tournament_id')
+        return TeamEntry.objects.filter(tournament_id=tournament_id)
 
-  def perform_create(self, serializer):
-    tournament_id = self.kwargs.get('tournament_id')
-    serializer.save(tournament_id=tournament_id)
+    def perform_create(self, serializer):
+        tournament_id = self.kwargs.get('tournament_id')
+        serializer.save(tournament_id=tournament_id)
 
 # ⚔️ Generación de fase de grupos
 class GenerateGroupMatchesView(views.APIView):
@@ -330,8 +334,8 @@ class GameTeamTournamentsView(views.APIView):
             'total_tournaments': len(tournaments)
         })
 
-# 🎮 Detalle de partido
-class MatchDetailView(generics.RetrieveAPIView):
+# Detalle y actualización de partido
+class MatchDetailView(generics.RetrieveUpdateAPIView):
     queryset = Match.objects.all()
     serializer_class = MatchSerializer
 
@@ -527,3 +531,107 @@ class KnockoutPreviewView(APIView):
           'matches': match_data
         }
       }, status=200)
+
+# Actualizar la vista de guardar resultado de partido
+class SaveMatchResultView(APIView):
+    def post(self, request, match_id):
+        try:
+            match = Match.objects.get(pk=match_id)
+        except Match.DoesNotExist:
+            return Response({'error': 'Match not found'}, status=404)
+
+        goals = request.data.get('goals', {})
+        
+        # Validar que los goals correspondan a los participantes
+        participants = list(match.participants.all())
+        for participant_id in goals.keys():
+            if not any(str(p.id) == participant_id for p in participants):
+                return Response({'error': f'Invalid participant ID: {participant_id}'}, status=400)
+
+        # Actualizar partido
+        match.goals = goals
+        match.played = True
+        match.save()
+
+        # Actualizar estadísticas de jugadores y equipos
+        for participant in participants:
+            # Actualizar estadísticas de jugadores
+            for player in participant.players.all():
+                update_player_stats(player.id)
+            
+            # Actualizar estadísticas del equipo si tiene uno asignado
+            if participant.assigned_team:
+                update_team_stats(participant.assigned_team.id)
+        
+        # Actualizar estado del torneo
+        update_tournament_status(match.tournament.id)
+        
+        # Si es un partido de liga, actualizar clasificación
+        if match.stage == 'league':
+            update_tournament_standings(match.tournament.id)
+
+        return Response({'message': 'Match result saved successfully'}, status=200)
+
+class GenerateLeagueMatchesView(APIView):
+    def post(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+        
+        if tournament.competition_type not in ['league', 'hybrid']:
+            return Response({'error': 'Tournament is not a league type'}, status=400)
+        
+        # Generar partidos de liga
+        matches = generate_league_matches(tournament)
+        
+        return Response({
+            'message': f'{len(matches)} league matches generated',
+            'matches_created': [m.id for m in matches]
+        }, status=201)
+
+class GeneratePlayoffsView(APIView):
+    def post(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+        
+        # Obtener los mejores equipos según la clasificación
+        standings = TournamentStanding.objects.filter(tournament=tournament)
+        top_teams = [s.team_entry for s in standings[:tournament.playoff_teams]]
+        
+        if len(top_teams) < 2:
+            return Response({'error': 'Not enough teams for playoffs'}, status=400)
+        
+        # Generar partidos de playoffs (usar la función existente de knockout)
+        from .brackets import generate_knockout_bracket
+        matches = generate_knockout_bracket(tournament, top_teams, 'quarterfinal')
+        
+        return Response({
+            'message': f'Playoffs generated with {len(top_teams)} teams',
+            'matches_created': [m.id for m in matches]
+        }, status=201)
+
+class TournamentStandingsView(APIView):
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+        
+        standings = TournamentStanding.objects.filter(tournament=tournament)
+        serializer = TournamentStandingSerializer(standings, many=True)
+        
+        return Response(serializer.data, status=200)
+
+class UpdateTournamentStandingsView(APIView):
+    def post(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+        
+        update_tournament_standings(tournament_id)
+        
+        return Response({'message': 'Standings updated successfully'}, status=200)

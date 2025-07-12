@@ -8,32 +8,40 @@ export const tournamentAPI = {
 
   // Obtener, actualizar y eliminar torneo específico
   getTournament: tournamentId => api.get(`/tournaments/${tournamentId}/`),
-  updateTournament: (tournamentId, data) =>
-    api.put(`/tournaments/${tournamentId}/`, data),
+  updateTournament: (tournamentId, data) => api.put(`/tournaments/${tournamentId}/`, data),
   deleteTournament: tournamentId => api.delete(`/tournaments/${tournamentId}/`),
 
   // Generar grupos
-  generateGroups: tournamentId =>
-    api.post(`/tournaments/${tournamentId}/generate-groups/`),
+  generateGroups: tournamentId => api.post(`/tournaments/${tournamentId}/generate-groups/`),
 
   // Entradas de equipos
-  getTeamEntries: tournamentId =>
-    api.get(`/tournaments/${tournamentId}/entries/`),
-  createTeamEntry: (tournamentId, data) =>
-    api.post(`/tournaments/${tournamentId}/entries/`, data),
+  getTeamEntries: tournamentId => api.get(`/tournaments/${tournamentId}/entries/`),
+  createTeamEntry: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/entries/`, data),
   deleteTeamEntry: entryId => api.delete(`/entries/${entryId}/delete/`),
 
   // Asignar equipos aleatoriamente
-  assignRandomTeams: tournamentId =>
-    api.post(`/tournaments/${tournamentId}/assign-teams/`),
+  assignRandomTeams: tournamentId => api.post(`/tournaments/${tournamentId}/assign-teams/`),
 
   // Vista previa de knockout
-  getKnockoutPreview: tournamentId =>
-    api.get(`/tournaments/${tournamentId}/knockout-preview/`),
+  getKnockoutPreview: tournamentId => api.get(`/tournaments/${tournamentId}/knockout-preview/`),
 
   // Completar etapa de knockout
-  completeKnockoutStage: (tournamentId, data) =>
-    api.post(`/tournaments/${tournamentId}/complete-knockout-stage/`, data),
+  completeKnockoutStage: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/complete-knockout-stage/`, data),
+
+  // Obtener partidos de un torneo
+  getTournamentMatches: tournamentId => api.get(`/tournaments/${tournamentId}/matches/`),
+
+  // Generar partidos de liga
+  generateLeagueMatches: tournamentId => api.post(`/tournaments/${tournamentId}/generate-league-matches/`),
+
+  // Generar playoffs
+  generatePlayoffs: tournamentId => api.post(`/tournaments/${tournamentId}/generate-playoffs/`),
+
+  // Obtener clasificación del torneo
+  getTournamentStandings: tournamentId => api.get(`/tournaments/${tournamentId}/standings/`),
+
+  // Actualizar clasificación
+  updateTournamentStandings: tournamentId => api.post(`/tournaments/${tournamentId}/update-standings/`),
 }
 
 // Funciones de API para partidos
@@ -49,6 +57,9 @@ export const matchAPI = {
 
   // Marcar partido como jugado
   markMatchAsPlayed: (matchId, data) => api.patch(`/matches/${matchId}/`, data),
+
+  // Guardar resultado de partido
+  saveMatchResult: (matchId, result) => api.post(`/matches/${matchId}/save-result/`, result),
 }
 
 // Funciones de API para jugadores
@@ -106,5 +117,4 @@ export const teamAPI = {
 }
 
 // Exportar la función de manejo de errores para uso en componentes
-
 export { handleApiError } from '@/utils/axios'

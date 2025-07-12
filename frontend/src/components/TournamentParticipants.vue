@@ -35,8 +35,8 @@
           <PlayerCard
             v-for="player in filteredAvailablePlayers"
             :key="player.id"
-            :player="player"
             :is-selected="false"
+            :player="player"
             @toggle-selection="addParticipant"
           />
         </div>
@@ -64,8 +64,8 @@
           <PlayerCard
             v-for="player in participants"
             :key="player.id"
-            :player="player"
             :is-selected="true"
+            :player="player"
             @toggle-selection="removeParticipant"
           />
         </div>
@@ -104,7 +104,7 @@
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase()
       available = available.filter(player =>
-        player.display_name.toLowerCase().includes(query)
+        player.display_name.toLowerCase().includes(query),
       )
     }
 
@@ -112,12 +112,12 @@
   })
 
   // Métodos
-  const addParticipant = (player) => {
+  const addParticipant = player => {
     const newParticipants = [...props.participants, player]
     emit('update:participants', newParticipants)
   }
 
-  const removeParticipant = (player) => {
+  const removeParticipant = player => {
     const newParticipants = props.participants.filter(p => p.id !== player.id)
     emit('update:participants', newParticipants)
   }

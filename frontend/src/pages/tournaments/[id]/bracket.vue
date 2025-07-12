@@ -80,9 +80,9 @@
               <div class="d-flex align-center mb-4">
                 <div class="flex-grow-1 mr-4">
                   <v-progress-linear
-                    :model-value="progressPercentage"
                     color="primary"
                     height="8"
+                    :model-value="progressPercentage"
                     rounded
                   />
                 </div>
@@ -127,11 +127,11 @@
 
       <!-- Bracket component -->
       <TournamentBracket
-        :tournament="tournament"
-        :matches="matches"
         :generating="generating"
-        @generate-stage="generateStage"
+        :matches="matches"
+        :tournament="tournament"
         @edit-match="editMatch"
+        @generate-stage="generateStage"
         @view-match="viewMatch"
       />
 
@@ -146,179 +146,179 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import TournamentBracket from '@/components/TournamentBracket.vue'
-import MatchResultForm from '@/components/MatchResultForm.vue'
-import { handleApiError, tournamentAPI, matchAPI } from '@/services/api'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import MatchResultForm from '@/components/MatchResultForm.vue'
+  import TournamentBracket from '@/components/TournamentBracket.vue'
+  import { handleApiError, matchAPI, tournamentAPI } from '@/services/api'
 
-// Router y Route
-const router = useRouter()
-const route = useRoute()
+  // Router y Route
+  const router = useRouter()
+  const route = useRoute()
 
-// Estado reactivo
-const tournament = ref(null)
-const matches = ref([])
-const loading = ref(true)
-const error = ref(null)
-const generating = ref(false)
-const showMatchDialog = ref(false)
-const selectedMatch = ref(null)
+  // Estado reactivo
+  const tournament = ref(null)
+  const matches = ref([])
+  const loading = ref(true)
+  const error = ref(null)
+  const generating = ref(false)
+  const showMatchDialog = ref(false)
+  const selectedMatch = ref(null)
 
-// Computed
-const quarterfinalMatches = computed(() => {
-  return matches.value.filter(match => match.stage === 'quarterfinal')
-})
+  // Computed
+  const quarterfinalMatches = computed(() => {
+    return matches.value.filter(match => match.stage === 'quarterfinal')
+  })
 
-const semifinalMatches = computed(() => {
-  return matches.value.filter(match => match.stage === 'semifinal')
-})
+  const semifinalMatches = computed(() => {
+    return matches.value.filter(match => match.stage === 'semifinal')
+  })
 
-const finalMatches = computed(() => {
-  return matches.value.filter(match => match.stage === 'final')
-})
+  const finalMatches = computed(() => {
+    return matches.value.filter(match => match.stage === 'final')
+  })
 
-const totalMatches = computed(() => {
-  return quarterfinalMatches.value.length + semifinalMatches.value.length + finalMatches.value.length
-})
+  const totalMatches = computed(() => {
+    return quarterfinalMatches.value.length + semifinalMatches.value.length + finalMatches.value.length
+  })
 
-const playedMatches = computed(() => {
-  return matches.value.filter(match => match.played).length
-})
+  const playedMatches = computed(() => {
+    return matches.value.filter(match => match.played).length
+  })
 
-const progressPercentage = computed(() => {
-  if (totalMatches.value === 0) return 0
-  return (playedMatches.value / totalMatches.value) * 100
-})
+  const progressPercentage = computed(() => {
+    if (totalMatches.value === 0) return 0
+    return (playedMatches.value / totalMatches.value) * 100
+  })
 
-const quarterfinalsCompleted = computed(() => {
-  return quarterfinalMatches.value.length === 4 &&
-         quarterfinalMatches.value.every(match => match.played)
-})
+  const quarterfinalsCompleted = computed(() => {
+    return quarterfinalMatches.value.length === 4
+      && quarterfinalMatches.value.every(match => match.played)
+  })
 
-const semifinalsCompleted = computed(() => {
-  return semifinalMatches.value.length === 2 &&
-         semifinalMatches.value.every(match => match.played)
-})
+  const semifinalsCompleted = computed(() => {
+    return semifinalMatches.value.length === 2
+      && semifinalMatches.value.every(match => match.played)
+  })
 
-const finalCompleted = computed(() => {
-  return finalMatches.value.length === 1 &&
-         finalMatches.value.every(match => match.played)
-})
+  const finalCompleted = computed(() => {
+    return finalMatches.value.length === 1
+      && finalMatches.value.every(match => match.played)
+  })
 
-// Cargar torneo
-const loadTournament = async () => {
-  const tournamentId = route.params.id
+  // Cargar torneo
+  const loadTournament = async () => {
+    const tournamentId = route.params.id
 
-  loading.value = true
-  error.value = null
+    loading.value = true
+    error.value = null
 
-  try {
-    console.log('Cargando torneo con ID:', tournamentId)
+    try {
+      console.log('Cargando torneo con ID:', tournamentId)
 
-    // Cargar datos del torneo
-    const tournamentResponse = await tournamentAPI.getTournament(tournamentId)
-    tournament.value = tournamentResponse.data
-    console.log('Datos del torneo cargados:', tournament.value)
+      // Cargar datos del torneo
+      const tournamentResponse = await tournamentAPI.getTournament(tournamentId)
+      tournament.value = tournamentResponse.data
+      console.log('Datos del torneo cargados:', tournament.value)
 
-    // Cargar partidos del torneo
-    await loadMatches(tournamentId)
-  } catch (error_) {
-    const errorInfo = handleApiError(error_)
-    error.value = errorInfo.message
-    console.error('Error al cargar torneo:', errorInfo.message)
-  } finally {
-    loading.value = false
-  }
-}
-
-// Cargar partidos
-const loadMatches = async (tournamentId) => {
-  try {
-    const matchesResponse = await matchAPI.getTournamentMatches(tournamentId)
-    matches.value = matchesResponse.data
-    console.log('Partidos del torneo cargados:', matches.value)
-  } catch (error_) {
-    console.error('Error al cargar partidos:', error_)
-    matches.value = []
-  }
-}
-
-// Generar etapa
-const generateStage = async (stageData) => {
-  const tournamentId = route.params.id
-
-  generating.value = true
-  try {
-    console.log('Generando etapa:', stageData)
-
-    const response = await tournamentAPI.completeKnockoutStage(tournamentId, stageData)
-    console.log('Etapa generada:', response.data)
-
-    // Recargar partidos
-    await loadMatches(tournamentId)
-
-    // Mostrar mensaje de éxito
-    // Aquí podrías usar un sistema de notificaciones
-    console.log('Etapa generada exitosamente')
-  } catch (error_) {
-    const errorInfo = handleApiError(error_)
-    console.error('Error al generar etapa:', errorInfo.message)
-    // Aquí podrías mostrar un mensaje de error
-  } finally {
-    generating.value = false
-  }
-}
-
-// Editar partido
-const editMatch = (match) => {
-  selectedMatch.value = match
-  showMatchDialog.value = true
-}
-
-// Ver partido
-const viewMatch = (match) => {
-  // Aquí podrías navegar a una página de detalle del partido
-  console.log('Ver partido:', match)
-}
-
-// Guardar resultado del partido
-const saveMatchResult = async (result) => {
-  try {
-    console.log('Guardando resultado:', result)
-
-    const matchId = result.matchId
-    const matchData = {
-      played: true,
-      goals: {
-        // Aquí necesitarías mapear los IDs de los equipos correctamente
-        // Por ahora usamos valores de ejemplo
-        [result.team1Id || 1]: result.team1Score,
-        [result.team2Id || 2]: result.team2Score
-      }
+      // Cargar partidos del torneo
+      await loadMatches(tournamentId)
+    } catch (error_) {
+      const errorInfo = handleApiError(error_)
+      error.value = errorInfo.message
+      console.error('Error al cargar torneo:', errorInfo.message)
+    } finally {
+      loading.value = false
     }
-
-    await matchAPI.markMatchAsPlayed(matchId, matchData)
-
-    // Recargar partidos
-    await loadMatches(route.params.id)
-
-    console.log('Resultado guardado exitosamente')
-  } catch (error_) {
-    const errorInfo = handleApiError(error_)
-    console.error('Error al guardar resultado:', errorInfo.message)
   }
-}
 
-// Navegación
-const goBack = () => {
-  router.push(`/tournaments/${route.params.id}`)
-}
+  // Cargar partidos
+  const loadMatches = async tournamentId => {
+    try {
+      const matchesResponse = await matchAPI.getTournamentMatches(tournamentId)
+      matches.value = matchesResponse.data
+      console.log('Partidos del torneo cargados:', matches.value)
+    } catch (error_) {
+      console.error('Error al cargar partidos:', error_)
+      matches.value = []
+    }
+  }
 
-// Cargar datos al montar el componente
-onMounted(() => {
-  loadTournament()
-})
+  // Generar etapa
+  const generateStage = async stageData => {
+    const tournamentId = route.params.id
+
+    generating.value = true
+    try {
+      console.log('Generando etapa:', stageData)
+
+      const response = await tournamentAPI.completeKnockoutStage(tournamentId, stageData)
+      console.log('Etapa generada:', response.data)
+
+      // Recargar partidos
+      await loadMatches(tournamentId)
+
+      // Mostrar mensaje de éxito
+      // Aquí podrías usar un sistema de notificaciones
+      console.log('Etapa generada exitosamente')
+    } catch (error_) {
+      const errorInfo = handleApiError(error_)
+      console.error('Error al generar etapa:', errorInfo.message)
+    // Aquí podrías mostrar un mensaje de error
+    } finally {
+      generating.value = false
+    }
+  }
+
+  // Editar partido
+  const editMatch = match => {
+    selectedMatch.value = match
+    showMatchDialog.value = true
+  }
+
+  // Ver partido
+  const viewMatch = match => {
+    // Aquí podrías navegar a una página de detalle del partido
+    console.log('Ver partido:', match)
+  }
+
+  // Guardar resultado del partido
+  const saveMatchResult = async result => {
+    try {
+      console.log('Guardando resultado:', result)
+
+      const matchId = result.matchId
+      const matchData = {
+        played: true,
+        goals: {
+          // Aquí necesitarías mapear los IDs de los equipos correctamente
+          // Por ahora usamos valores de ejemplo
+          [result.team1Id || 1]: result.team1Score,
+          [result.team2Id || 2]: result.team2Score,
+        },
+      }
+
+      await matchAPI.markMatchAsPlayed(matchId, matchData)
+
+      // Recargar partidos
+      await loadMatches(route.params.id)
+
+      console.log('Resultado guardado exitosamente')
+    } catch (error_) {
+      const errorInfo = handleApiError(error_)
+      console.error('Error al guardar resultado:', errorInfo.message)
+    }
+  }
+
+  // Navegación
+  const goBack = () => {
+    router.push(`/tournaments/${route.params.id}`)
+  }
+
+  // Cargar datos al montar el componente
+  onMounted(() => {
+    loadTournament()
+  })
 </script>
 
 <style scoped>

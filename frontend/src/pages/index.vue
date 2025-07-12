@@ -28,7 +28,7 @@
       <!-- Dashboard content -->
       <div v-else>
         <!-- Statistics cards -->
-        <v-row class="mb-6">
+        <v-row class="mt-6">
           <v-col cols="12" md="3" sm="6">
             <v-card class="stat-card">
               <v-card-text class="text-center">
@@ -37,7 +37,7 @@
                   {{ stats.totalTournaments }}
                 </div>
                 <div class="text-body-2 text-grey-darken-1">
-                  Torneos Creados
+                  Torneos Activos
                 </div>
               </v-card-text>
             </v-card>
@@ -65,7 +65,7 @@
                   {{ stats.totalTeams }}
                 </div>
                 <div class="text-body-2 text-grey-darken-1">
-                  Equipos Creados
+                  Equipos Disponibles
                 </div>
               </v-card-text>
             </v-card>
@@ -340,13 +340,13 @@
 
       // Obtener jugadores destacados
       topPlayers.value = players
-        .filter(p => p.stats)
+        .filter(p => p.stats && p.stats.total_matches > 0)
         .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
         .slice(0, 5)
 
       // Obtener equipos destacados
       topTeams.value = teams
-        .filter(t => t.stats)
+        .filter(t => t.stats && t.stats.total_matches > 0)
         .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
         .slice(0, 5)
     } catch (error) {

@@ -27,11 +27,11 @@
   <v-main>
     <v-parallax src="@/assets/fondocesped.jpg">
       <v-container class="pa-0" fluid>
-      <!-- Slot para el contenido de las rutas -->
-      <router-view />
+        <!-- Slot para el contenido de las rutas -->
+        <router-view />
       </v-container>
     </v-parallax>
-    
+
     <!-- Footer (opcional) -->
   </v-main>
   <v-footer class="py-1" color="#f3f2e5">

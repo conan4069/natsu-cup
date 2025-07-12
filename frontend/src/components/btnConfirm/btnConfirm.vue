@@ -10,59 +10,59 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { handleApiError, tournamentAPI } from '../../../../natsu-cup/src/services/api'
+  import { ref } from 'vue'
+  import { handleApiError, tournamentAPI } from '../../../../natsu-cup/src/services/api'
 
-// Props
-const props = defineProps({
-  tournamentId: {
-    type: [String, Number],
-    required: true,
-  },
-  onSuccess: {
-    type: Function,
-    default: null,
-  },
-})
+  // Props
+  const props = defineProps({
+    tournamentId: {
+      type: [String, Number],
+      required: true,
+    },
+    onSuccess: {
+      type: Function,
+      default: null,
+    },
+  })
 
-// Emits
-const emit = defineEmits(['success', 'error'])
+  // Emits
+  const emit = defineEmits(['success', 'error'])
 
-const loading = ref(false)
+  const loading = ref(false)
 
-async function confirmBracket() {
-  loading.value = true
+  async function confirmBracket () {
+    loading.value = true
 
-  try {
-    const response = await tournamentAPI.completeKnockoutStage(
-      props.tournamentId,
-      {
-        total_slots: 8,
-        next_stage: 'quarterfinal',
+    try {
+      const response = await tournamentAPI.completeKnockoutStage(
+        props.tournamentId,
+        {
+          total_slots: 8,
+          next_stage: 'quarterfinal',
+        },
+      )
+
+      // Emitir evento de éxito
+      emit('success', response.data)
+
+      // Llamar callback de éxito si existe
+      if (props.onSuccess) {
+        await props.onSuccess(response.data)
       }
-    )
 
-    // Emitir evento de éxito
-    emit('success', response.data)
+      // Mostrar mensaje de éxito (puedes usar un toast aquí)
+      console.log('¡Llave de cuartos generada con éxito!')
+    } catch (error) {
+      const errorInfo = handleApiError(error)
+      console.error('Error:', errorInfo.message)
 
-    // Llamar callback de éxito si existe
-    if (props.onSuccess) {
-      await props.onSuccess(response.data)
+      // Emitir evento de error
+      emit('error', errorInfo)
+
+      // Mostrar mensaje de error (puedes usar un toast aquí)
+      console.error(errorInfo.message)
+    } finally {
+      loading.value = false
     }
-
-    // Mostrar mensaje de éxito (puedes usar un toast aquí)
-    console.log('¡Llave de cuartos generada con éxito!')
-  } catch (error) {
-    const errorInfo = handleApiError(error)
-    console.error('Error:', errorInfo.message)
-
-    // Emitir evento de error
-    emit('error', errorInfo)
-
-    // Mostrar mensaje de error (puedes usar un toast aquí)
-    console.error(errorInfo.message)
-  } finally {
-    loading.value = false
   }
-}
 </script>

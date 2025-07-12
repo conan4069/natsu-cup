@@ -40,8 +40,8 @@
             <v-spacer />
             <v-btn
               :disabled="saving"
-              variant="outlined"
               rounded="xl"
+              variant="outlined"
               @click="goBack"
             >
               Cancelar
@@ -50,8 +50,8 @@
               color="primary"
               :disabled="!formValid"
               :loading="saving"
-              variant="elevated"
               rounded="xl"
+              variant="elevated"
               @click="createTeam"
             >
               <v-icon start>mdi-content-save</v-icon>

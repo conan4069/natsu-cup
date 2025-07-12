@@ -106,8 +106,10 @@
                 :participants="participants"
                 :teams="teams"
                 :tournament-format="tournamentData.format"
+                :tournament-id="route.params.id"
                 @format-change="updateTournamentFormat"
                 @update:team-assignments="updateTeamAssignments"
+                @update:team-entries="updateTeamEntries"
                 @update:teams="updateTeams"
               />
             </v-card-text>
@@ -180,6 +182,7 @@
   // Equipos
   const teams = ref([])
   const teamAssignments = ref({})
+  const teamEntries = ref([])
 
   // Estado del torneo
   const tournamentHasMatches = ref(false)
@@ -278,6 +281,10 @@
     teamAssignments.value = newAssignments
   }
 
+  const updateTeamEntries = newEntries => {
+    teamEntries.value = newEntries
+  }
+
   const updateTournamentFormat = newFormat => {
     tournamentData.value.format = newFormat
   }
@@ -317,10 +324,12 @@
         await tournamentAPI.deleteTeamEntry(entry.id)
       }
 
-      // Crear nuevas entradas para cada participante
-      for (const participant of participants.value) {
+      // Crear nuevas entradas usando el formato correcto
+      for (const entry of teamEntries.value) {
         await tournamentAPI.createTeamEntry(tournamentId, {
-          players: [participant.id],
+          players: entry.players,
+          assigned_team: entry.assigned_team,
+          // NO incluir tournament aquí - el backend lo maneja automáticamente
         })
       }
 

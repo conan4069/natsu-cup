@@ -13,8 +13,8 @@
           <v-btn
             color="primary"
             prepend-icon="mdi-plus"
-            size="x-large"
             rounded="xl"
+            size="x-large"
             @click="navigateToCreate"
           >
             Nuevo Jugador
@@ -28,26 +28,26 @@
       <v-col cols="12" md="6" style="transform: translateX(50%);">
         <v-text-field
           v-model="searchQuery"
+          bg-color="white"
+          color="primary"
           density="comfortable"
           hide-details
           placeholder="Buscar jugadores..."
           prepend-inner-icon="mdi-magnify"
-          variant="outlined"
           rounded="xl"
-          color="primary"
-          bg-color="white"
+          variant="outlined"
           @input="filterPlayers"
         />
       </v-col>
       <v-col class="d-flex justify-end" cols="12" md="6">
         <v-btn
-          :loading="loading"
-          prepend-icon="mdi-refresh"
-          variant="elevated"
-          rounded="xl"
-          size="large"
           class="pt-3 pb-4"
           color="primary"
+          :loading="loading"
+          prepend-icon="mdi-refresh"
+          rounded="xl"
+          size="large"
+          variant="elevated"
           @click="loadPlayers"
         >
           Actualizar
@@ -132,8 +132,8 @@
             <v-btn
               color="primary"
               prepend-icon="mdi-plus"
-              size="large"
               rounded="xl"
+              size="large"
               @click="navigateToCreate"
             >
               Agregar Jugador
@@ -157,8 +157,8 @@
         <v-card-actions>
           <v-spacer />
           <v-btn
-            variant="outlined"
             rounded="xl"
+            variant="outlined"
             @click="deleteDialog = false"
           >
             Cancelar
@@ -166,8 +166,8 @@
           <v-btn
             color="error"
             :loading="deleting"
-            variant="elevated"
             rounded="xl"
+            variant="elevated"
             @click="deletePlayer"
           >
             Eliminar
@@ -180,8 +180,8 @@
 
 <script setup>
   import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { handleApiError, playerAPI } from '@/services/api'
+  import { useRouter } from 'vue-router'
+  import { handleApiError, playerAPI } from '@/services/api'
 
   // Router
   const router = useRouter()
@@ -198,7 +198,7 @@ import { handleApiError, playerAPI } from '@/services/api'
   const headers = [
     { title: 'Avatar', key: 'avatar', sortable: false },
     { title: 'Jugador', key: 'display_name', sortable: true },
-    { title: 'Acciones', key: 'actions', sortable: false},
+    { title: 'Acciones', key: 'actions', sortable: false },
   ]
 
   // Computed para filtrar jugadores

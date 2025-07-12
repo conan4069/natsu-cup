@@ -21,9 +21,9 @@
           <div class="d-flex align-center mb-4">
             <v-btn
               class="mr-4"
+              color="white"
               icon="mdi-arrow-left"
               variant="text"
-              color="white"
               @click="goBack"
             />
             <div>
@@ -66,8 +66,8 @@
                 class="mr-2"
                 color="error"
                 :loading="deleting"
-                variant="outlined"
                 rounded="xl"
+                variant="outlined"
                 @click="confirmDelete"
               >
                 <v-icon start>mdi-delete</v-icon>
@@ -77,8 +77,8 @@
                 color="primary"
                 :disabled="!formValid"
                 :loading="saving"
-                variant="elevated"
                 rounded="xl"
+                variant="elevated"
                 @click="savePlayer"
               >
                 <v-icon start>mdi-content-save</v-icon>

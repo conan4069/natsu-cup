@@ -7,14 +7,14 @@
   >
     <v-card-text class="text-center pa-4">
       <!-- Avatar del jugador -->
-      <v-avatar size="80" class="mb-3">
+      <v-avatar class="mb-3" size="80">
         <v-img
           v-if="player.avatar"
-          :src="player.avatar"
           alt="Avatar del jugador"
           cover
+          :src="player.avatar"
         />
-        <v-icon v-else size="40" color="grey">mdi-account-question</v-icon>
+        <v-icon v-else color="grey" size="40">mdi-account-question</v-icon>
       </v-avatar>
 
       <!-- Nombre del jugador -->
@@ -39,27 +39,27 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+  import { computed } from 'vue'
 
-// Props
-const props = defineProps({
-  player: {
-    type: Object,
-    required: true
-  },
-  isSelected: {
-    type: Boolean,
-    default: false
+  // Props
+  const props = defineProps({
+    player: {
+      type: Object,
+      required: true,
+    },
+    isSelected: {
+      type: Boolean,
+      default: false,
+    },
+  })
+
+  // Emits
+  const emit = defineEmits(['toggle-selection'])
+
+  // Métodos
+  const toggleSelection = () => {
+    emit('toggle-selection', props.player)
   }
-})
-
-// Emits
-const emit = defineEmits(['toggle-selection'])
-
-// Métodos
-const toggleSelection = () => {
-  emit('toggle-selection', props.player)
-}
 </script>
 
 <style scoped>

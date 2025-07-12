@@ -21,9 +21,9 @@
           <div class="d-flex align-center mb-4">
             <v-btn
               class="mr-4"
+              color="white"
               icon="mdi-arrow-left"
               variant="text"
-              color="white"
               @click="goBack"
             />
             <div class="d-flex align-center">
@@ -80,8 +80,8 @@
               <v-btn
                 color="warning"
                 prepend-icon="mdi-pencil"
-                variant="outlined"
                 rounded="xl"
+                variant="outlined"
 
                 @click="editPlayer"
               >

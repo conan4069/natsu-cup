@@ -59,8 +59,8 @@
             <v-card-text>
               <TeamForm
                 mode="view"
-                :team="team"
                 readonly
+                :team="team"
               />
             </v-card-text>
             <v-card-actions>
@@ -85,9 +85,9 @@
               Estadísticas
               <v-progress-circular
                 v-if="loadingStats"
+                class="ml-2"
                 indeterminate
                 size="20"
-                class="ml-2"
               />
             </v-card-title>
             <v-card-text>
@@ -232,7 +232,7 @@
     win_rate: 0,
     loss_rate: 0,
     draw_rate: 0,
-    total_points: 0
+    total_points: 0,
   })
   const recentTournaments = ref([])
 
@@ -269,7 +269,7 @@
           win_rate: 0,
           loss_rate: 0,
           draw_rate: 0,
-          total_points: 0
+          total_points: 0,
         }
       } finally {
         loadingStats.value = false

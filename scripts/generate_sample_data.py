@@ -160,6 +160,37 @@ def main():
     print("\n🛡️  Creando equipos...")
     teams = create_sample_teams()
     
+    # Agregar torneos de diferentes tipos
+    tournaments_data = [
+        {
+            'name': 'Copa de Verano 2024',
+            'format': '1v1',
+            'competition_type': 'cup',
+            'total_teams': 8,
+            'has_group_stage': False,
+            'has_knockout': True,
+            'status': 'active'
+        },
+        {
+            'name': 'Liga Regional 2024',
+            'format': '2v2',
+            'competition_type': 'league',
+            'total_teams': 6,
+            'league_rounds': 2,
+            'playoff_teams': 4,
+            'status': 'active'
+        },
+        {
+            'name': 'Torneo Mixto 2024',
+            'format': '1v1',
+            'competition_type': 'hybrid',
+            'total_teams': 8,
+            'league_rounds': 1,
+            'playoff_teams': 4,
+            'status': 'draft'
+        }
+    ]
+    
     print("\n" + "=" * 50)
     print(f"✅ Datos generados exitosamente:")
     print(f"   - {len(players)} jugadores creados")

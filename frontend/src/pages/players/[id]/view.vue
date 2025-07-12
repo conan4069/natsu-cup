@@ -255,7 +255,7 @@
           win_rate: 0,
           loss_rate: 0,
           draw_rate: 0,
-          total_points: 0
+          total_points: 0,
         }
       }
 

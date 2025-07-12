@@ -6,9 +6,9 @@
         <div class="d-flex align-center mb-4">
           <v-btn
             class="mr-4"
+            color="white"
             icon="mdi-arrow-left"
             variant="text"
-            color="white"
             @click="goBack"
           />
           <div>
@@ -41,8 +41,8 @@
             <v-spacer />
             <v-btn
               :disabled="saving"
-              variant="outlined"
               rounded="xl"
+              variant="outlined"
               @click="goBack"
             >
               Cancelar
@@ -51,8 +51,8 @@
               color="primary"
               :disabled="!formValid"
               :loading="saving"
-              variant="elevated"
               rounded="xl"
+              variant="elevated"
               @click="savePlayer"
             >
               <v-icon start>mdi-content-save</v-icon>

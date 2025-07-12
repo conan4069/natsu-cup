@@ -1,5 +1,8 @@
 from django.urls import path
 from . import views
+from .views import (
+    GenerateLeagueMatchesView, GeneratePlayoffsView, TournamentStandingsView, UpdateTournamentStandingsView, SaveMatchResultView
+)
 
 urlpatterns = [
     path('tournaments/', views.TournamentListCreateView.as_view()),
@@ -41,6 +44,9 @@ urlpatterns = [
     path('teams/<int:pk>/', views.GameTeamDetailView.as_view()),
     path('teams/<int:team_id>/stats/', views.GameTeamStatsView.as_view()),
     path('teams/<int:team_id>/tournaments/', views.GameTeamTournamentsView.as_view()),
-    # urls.py
-
+    path('tournaments/<int:tournament_id>/generate-league-matches/', GenerateLeagueMatchesView.as_view(), name='generate-league-matches'),
+    path('tournaments/<int:tournament_id>/generate-playoffs/', GeneratePlayoffsView.as_view(), name='generate-playoffs'),
+    path('tournaments/<int:tournament_id>/standings/', TournamentStandingsView.as_view(), name='tournament-standings'),
+    path('tournaments/<int:tournament_id>/update-standings/', UpdateTournamentStandingsView.as_view(), name='update-standings'),
+    path('matches/<int:match_id>/save-result/', SaveMatchResultView.as_view(), name='save-match-result'),
 ]

@@ -80,9 +80,9 @@
               <div class="d-flex align-center mb-4">
                 <div class="flex-grow-1 mr-4">
                   <v-progress-linear
-                    :model-value="progressPercentage"
                     color="primary"
                     height="8"
+                    :model-value="progressPercentage"
                     rounded
                   />
                 </div>
@@ -134,88 +134,88 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import TournamentGroups from '@/components/TournamentGroups.vue'
-import { handleApiError, tournamentAPI, matchAPI } from '@/services/api'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import TournamentGroups from '@/components/TournamentGroups.vue'
+  import { handleApiError, matchAPI, tournamentAPI } from '@/services/api'
 
-// Router y Route
-const router = useRouter()
-const route = useRoute()
+  // Router y Route
+  const router = useRouter()
+  const route = useRoute()
 
-// Estado reactivo
-const tournament = ref(null)
-const matches = ref([])
-const loading = ref(true)
-const error = ref(null)
+  // Estado reactivo
+  const tournament = ref(null)
+  const matches = ref([])
+  const loading = ref(true)
+  const error = ref(null)
 
-// Computed
-const totalMatches = computed(() => {
-  return matches.value.length
-})
+  // Computed
+  const totalMatches = computed(() => {
+    return matches.value.length
+  })
 
-const playedMatches = computed(() => {
-  return matches.value.filter(match => match.played).length
-})
+  const playedMatches = computed(() => {
+    return matches.value.filter(match => match.played).length
+  })
 
-const progressPercentage = computed(() => {
-  if (totalMatches.value === 0) return 0
-  return (playedMatches.value / totalMatches.value) * 100
-})
+  const progressPercentage = computed(() => {
+    if (totalMatches.value === 0) return 0
+    return (playedMatches.value / totalMatches.value) * 100
+  })
 
-const groupsGenerated = computed(() => {
-  // Verificar si hay partidos de grupos
-  return matches.value.some(match => match.stage === 'group')
-})
+  const groupsGenerated = computed(() => {
+    // Verificar si hay partidos de grupos
+    return matches.value.some(match => match.stage === 'group')
+  })
 
-const bracketReady = computed(() => {
-  // Verificar si todos los partidos de grupos están completados
-  const groupMatches = matches.value.filter(match => match.stage === 'group')
-  return groupMatches.length > 0 && groupMatches.every(match => match.played)
-})
+  const bracketReady = computed(() => {
+    // Verificar si todos los partidos de grupos están completados
+    const groupMatches = matches.value.filter(match => match.stage === 'group')
+    return groupMatches.length > 0 && groupMatches.every(match => match.played)
+  })
 
-// Cargar torneo
-const loadTournament = async () => {
-  const tournamentId = route.params.id
+  // Cargar torneo
+  const loadTournament = async () => {
+    const tournamentId = route.params.id
 
-  loading.value = true
-  error.value = null
+    loading.value = true
+    error.value = null
 
-  try {
-    console.log('Cargando torneo con ID:', tournamentId)
-
-    // Cargar datos del torneo
-    const tournamentResponse = await tournamentAPI.getTournament(tournamentId)
-    tournament.value = tournamentResponse.data
-    console.log('Datos del torneo cargados:', tournament.value)
-
-    // Cargar partidos del torneo
     try {
-      const matchesResponse = await matchAPI.getTournamentMatches(tournamentId)
-      matches.value = matchesResponse.data
-      console.log('Partidos del torneo cargados:', matches.value)
-    } catch (matchesError) {
-      console.error('Error al cargar partidos:', matchesError)
-      matches.value = []
+      console.log('Cargando torneo con ID:', tournamentId)
+
+      // Cargar datos del torneo
+      const tournamentResponse = await tournamentAPI.getTournament(tournamentId)
+      tournament.value = tournamentResponse.data
+      console.log('Datos del torneo cargados:', tournament.value)
+
+      // Cargar partidos del torneo
+      try {
+        const matchesResponse = await matchAPI.getTournamentMatches(tournamentId)
+        matches.value = matchesResponse.data
+        console.log('Partidos del torneo cargados:', matches.value)
+      } catch (matchesError) {
+        console.error('Error al cargar partidos:', matchesError)
+        matches.value = []
+      }
+    } catch (error_) {
+      const errorInfo = handleApiError(error_)
+      error.value = errorInfo.message
+      console.error('Error al cargar torneo:', errorInfo.message)
+    } finally {
+      loading.value = false
     }
-  } catch (error_) {
-    const errorInfo = handleApiError(error_)
-    error.value = errorInfo.message
-    console.error('Error al cargar torneo:', errorInfo.message)
-  } finally {
-    loading.value = false
   }
-}
 
-// Navegación
-const goBack = () => {
-  router.push(`/tournaments/${route.params.id}`)
-}
+  // Navegación
+  const goBack = () => {
+    router.push(`/tournaments/${route.params.id}`)
+  }
 
-// Cargar datos al montar el componente
-onMounted(() => {
-  loadTournament()
-})
+  // Cargar datos al montar el componente
+  onMounted(() => {
+    loadTournament()
+  })
 </script>
 
 <style scoped>
