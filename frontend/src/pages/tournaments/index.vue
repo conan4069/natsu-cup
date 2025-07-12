@@ -204,7 +204,6 @@
 <script setup>
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { sampleTournaments } from '@/data/sampleData'
   import { handleApiError, tournamentAPI } from '@/services/api'
 
   // Router
@@ -241,18 +240,12 @@
   const loadTournaments = async () => {
     loading.value = true
     try {
-      // Intentar cargar datos reales primero
-      try {
-        const response = await tournamentAPI.getTournaments()
-        tournaments.value = response.data
-      } catch {
-        console.log('API no disponible, usando datos de ejemplo')
-        // Usar datos de ejemplo si la API no está disponible
-        tournaments.value = sampleTournaments
-      }
+      const response = await tournamentAPI.getTournaments()
+      tournaments.value = response.data
     } catch (error) {
       const errorInfo = handleApiError(error)
       console.error('Error al cargar torneos:', errorInfo.message)
+      tournaments.value = []
     } finally {
       loading.value = false
     }

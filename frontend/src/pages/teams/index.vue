@@ -180,9 +180,8 @@
 
 <script setup>
   import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { handleApiError, teamAPI } from '@/services/api'
-import { sampleTeams } from '@/data/sampleData'
+  import { useRouter } from 'vue-router'
+  import { handleApiError, teamAPI } from '@/services/api'
 
   // Router
   const router = useRouter()
@@ -216,18 +215,12 @@ import { sampleTeams } from '@/data/sampleData'
   const loadTeams = async () => {
     loading.value = true
     try {
-      // Intentar cargar datos reales primero
-      try {
-        const response = await teamAPI.getTeams()
-        teams.value = response.data
-      } catch (apiError) {
-        console.log('API no disponible, usando datos de ejemplo')
-        // Usar datos de ejemplo si la API no está disponible
-        teams.value = sampleTeams
-      }
+      const response = await teamAPI.getTeams()
+      teams.value = response.data
     } catch (error) {
       const errorInfo = handleApiError(error)
       console.error('Error al cargar equipos:', errorInfo.message)
+      teams.value = []
     } finally {
       loading.value = false
     }

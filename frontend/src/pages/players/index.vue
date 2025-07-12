@@ -182,7 +182,6 @@
   import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { handleApiError, playerAPI } from '@/services/api'
-import { samplePlayers } from '@/data/sampleData'
 
   // Router
   const router = useRouter()
@@ -217,19 +216,12 @@ import { samplePlayers } from '@/data/sampleData'
   const loadPlayers = async () => {
     loading.value = true
     try {
-      // Intentar cargar datos reales primero
-      try {
-        const response = await playerAPI.getPlayers()
-        players.value = response.data
-      } catch (apiError) {
-        console.log('API no disponible, usando datos de ejemplo')
-        // Usar datos de ejemplo si la API no está disponible
-        players.value = samplePlayers
-      }
+      const response = await playerAPI.getPlayers()
+      players.value = response.data
     } catch (error) {
       const errorInfo = handleApiError(error)
       console.error('Error al cargar jugadores:', errorInfo.message)
-    // Aquí podrías mostrar una notificación de error
+      players.value = []
     } finally {
       loading.value = false
     }

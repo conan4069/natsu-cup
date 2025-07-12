@@ -293,7 +293,6 @@
 <script setup>
   import { onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { samplePlayers, sampleTeams, sampleTournaments } from '@/data/sampleData'
   import { handleApiError, playerAPI, teamAPI, tournamentAPI } from '@/services/api'
 
   // Router
@@ -316,77 +315,54 @@
     loading.value = true
 
     try {
-      // Intentar cargar datos reales primero
-      try {
-        const [tournamentsRes, playersRes, teamsRes] = await Promise.all([
-          tournamentAPI.getTournaments(),
-          playerAPI.getPlayers(),
-          teamAPI.getTeams(),
-        ])
+      const [tournamentsRes, playersRes, teamsRes] = await Promise.all([
+        tournamentAPI.getTournaments(),
+        playerAPI.getPlayers(),
+        teamAPI.getTeams(),
+      ])
 
-        const tournaments = tournamentsRes.data
-        const players = playersRes.data
-        const teams = teamsRes.data
+      const tournaments = tournamentsRes.data
+      const players = playersRes.data
+      const teams = teamsRes.data
 
-        // Calcular estadísticas
-        stats.value = {
-          totalTournaments: tournaments.length,
-          totalPlayers: players.length,
-          totalTeams: teams.length,
-          totalMatches: tournaments.reduce((total, t) => total + (t.matches_count || 0), 0),
-        }
-
-        // Obtener torneos recientes
-        recentTournaments.value = tournaments
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-          .slice(0, 5)
-
-        // Obtener jugadores destacados
-        topPlayers.value = players
-          .filter(p => p.stats)
-          .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
-          .slice(0, 5)
-
-        // Obtener equipos destacados
-        topTeams.value = teams
-          .filter(t => t.stats)
-          .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
-          .slice(0, 5)
-      } catch {
-        console.log('API no disponible, usando datos de ejemplo')
-        // Usar datos de ejemplo si la API no está disponible
-        const tournaments = sampleTournaments
-        const players = samplePlayers
-        const teams = sampleTeams
-
-        // Calcular estadísticas
-        stats.value = {
-          totalTournaments: tournaments.length,
-          totalPlayers: players.length,
-          totalTeams: teams.length,
-          totalMatches: tournaments.reduce((total, t) => total + (t.matches_count || 0), 0),
-        }
-
-        // Obtener torneos recientes
-        recentTournaments.value = tournaments
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-          .slice(0, 5)
-
-        // Obtener jugadores destacados
-        topPlayers.value = players
-          .filter(p => p.stats)
-          .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
-          .slice(0, 5)
-
-        // Obtener equipos destacados
-        topTeams.value = teams
-          .filter(t => t.stats)
-          .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
-          .slice(0, 5)
+      // Calcular estadísticas
+      stats.value = {
+        totalTournaments: tournaments.length,
+        totalPlayers: players.length,
+        totalTeams: teams.length,
+        totalMatches: tournaments.reduce((total, t) => total + (t.matches_count || 0), 0),
       }
+
+      // Obtener torneos recientes
+      recentTournaments.value = tournaments
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5)
+
+      // Obtener jugadores destacados
+      topPlayers.value = players
+        .filter(p => p.stats)
+        .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
+        .slice(0, 5)
+
+      // Obtener equipos destacados
+      topTeams.value = teams
+        .filter(t => t.stats)
+        .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
+        .slice(0, 5)
     } catch (error) {
       const errorInfo = handleApiError(error)
       console.error('Error al cargar dashboard:', errorInfo.message)
+
+      // Inicializar con valores vacíos en caso de error
+      stats.value = {
+        totalTournaments: 0,
+        totalPlayers: 0,
+        totalTeams: 0,
+        totalMatches: 0,
+      }
+      recentTournaments.value = []
+      topPlayers.value = []
+      topTeams.value = []
     } finally {
       loading.value = false
     }

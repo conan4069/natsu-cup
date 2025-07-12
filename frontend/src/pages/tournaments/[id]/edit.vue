@@ -143,7 +143,6 @@
   import TournamentForm from '@/components/TournamentForm.vue'
   import TournamentParticipants from '@/components/TournamentParticipants.vue'
   import TournamentTeamConfiguration from '@/components/TournamentTeamConfiguration.vue'
-  import { samplePlayers } from '@/data/sampleData'
   import { handleApiError, playerAPI, tournamentAPI } from '@/services/api'
   import { useAppStore } from '@/stores/app'
 
@@ -233,32 +232,25 @@
   // Cargar participantes del torneo
   const loadTournamentParticipants = async tournamentId => {
     try {
-      // Intentar cargar participantes reales del torneo
-      try {
-        const entriesResponse = await tournamentAPI.getTeamEntries(tournamentId)
-        const entries = entriesResponse.data
+      const entriesResponse = await tournamentAPI.getTeamEntries(tournamentId)
+      const entries = entriesResponse.data
 
-        // Extraer participantes únicos de las entradas
-        const participantMap = new Map()
-        for (const entry of entries) {
-          if (entry.players) {
-            for (const player of entry.players) {
-              if (!participantMap.has(player.id)) {
-                participantMap.set(player.id, player)
-              }
+      // Extraer participantes únicos de las entradas
+      const participantMap = new Map()
+      for (const entry of entries) {
+        if (entry.players) {
+          for (const player of entry.players) {
+            if (!participantMap.has(player.id)) {
+              participantMap.set(player.id, player)
             }
           }
         }
-
-        participants.value = Array.from(participantMap.values())
-      } catch {
-        console.log('No se pudieron cargar participantes del torneo, usando datos de ejemplo')
-        // Usar datos de ejemplo si no se pueden cargar los reales
-        participants.value = samplePlayers.slice(0, 8)
       }
+
+      participants.value = Array.from(participantMap.values())
     } catch (error) {
       console.error('Error al cargar participantes:', error)
-      participants.value = samplePlayers.slice(0, 8)
+      participants.value = []
     }
   }
 
@@ -342,17 +334,13 @@
   // Cargar jugadores
   const loadPlayers = async () => {
     try {
-      try {
-        const response = await playerAPI.getPlayers()
-        allPlayers.value = response.data
-      } catch {
-        console.log('API no disponible, usando datos de ejemplo')
-        allPlayers.value = samplePlayers
-      }
+      const response = await playerAPI.getPlayers()
+      allPlayers.value = response.data
     } catch (error) {
       const errorInfo = handleApiError(error)
       appStore.showError(`Error al cargar jugadores: ${errorInfo.message}`)
       console.error('Error al cargar jugadores:', errorInfo.message)
+      allPlayers.value = []
     }
   }
 
