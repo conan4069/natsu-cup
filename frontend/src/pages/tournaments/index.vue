@@ -42,12 +42,12 @@
       <v-col class="d-flex justify-end" cols="12" md="6">
         <v-btn
           class="pt-3 pb-4"
-          color="primary"
+          color="blue-darken-2"
           :loading="loading"
           prepend-icon="mdi-refresh"
           rounded="xl"
           size="large"
-          variant="outlined"
+          variant="elevated"
           @click="loadTournaments"
         >
           Actualizar
@@ -100,12 +100,12 @@
 
         <!-- Configuración -->
         <template #item.config="{ item }">
-          <div class="d-flex flex-column">
+          <div class="d-inline-flex flex-column align-start">
             <v-chip
               v-if="item.has_group_stage"
               class="mb-1"
               color="success"
-              size="x-small"
+              size="small"
               variant="outlined"
             >
               Grupos
@@ -113,7 +113,7 @@
             <v-chip
               v-if="item.has_knockout"
               color="warning"
-              size="x-small"
+              size="small"
               variant="outlined"
             >
               Eliminatoria
@@ -123,7 +123,7 @@
 
         <!-- Acciones -->
         <template #item.actions="{ item }">
-          <div class="d-flex gap-2">
+          <div class="d-flex justify-center" style="gap: 5px;">
             <v-btn
               color="primary"
               density="comfortable"

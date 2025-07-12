@@ -20,15 +20,16 @@
         <v-col cols="12">
           <div class="d-flex align-center mb-4">
             <v-btn
-              icon
+              icon="mdi-arrow-left"
               variant="text"
+              color="white"
               @click="goBack"
             >
               <v-icon>mdi-arrow-left</v-icon>
             </v-btn>
             <div>
-              <h1 class="text-h4 font-weight-bold mb-2 page-title">Crear Nuevo Torneo</h1>
-              <p class="text-body-1 page-subtitle">
+              <h1 class="text-h4 font-weight-bold mb-2 page-title text-white">Crear Nuevo Torneo</h1>
+              <p class="text-body-1 page-subtitle text-white">
                 Configura los detalles de tu torneo
               </p>
             </div>
@@ -39,7 +40,7 @@
       <!-- Tournament form -->
       <v-row>
         <v-col cols="12" md="8">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-trophy</v-icon>
               Información del Torneo
@@ -53,7 +54,7 @@
                       color="primary"
                       label="Nombre del Torneo"
                       required
-                      rounded-xl
+                      rounded="xl"
                       :rules="[v => !!v || 'El nombre es requerido']"
                       variant="outlined"
                     />
@@ -66,7 +67,7 @@
                       :items="formatOptions"
                       label="Formato"
                       required
-                      rounded-xl
+                      rounded="xl"
                       variant="outlined"
                     />
                   </v-col>
@@ -80,7 +81,7 @@
                       :items="competitionTypes"
                       label="Tipo de Competición"
                       required
-                      rounded-xl
+                      rounded="xl"
                       variant="outlined"
                       @update:model-value="onCompetitionTypeChange"
                     />
@@ -94,7 +95,7 @@
                       max="32"
                       min="2"
                       required
-                      rounded-xl
+                      rounded="xl"
                       :rules="[v => v >= 2 || 'Mínimo 2 equipos']"
                       type="number"
                       variant="outlined"
@@ -109,7 +110,7 @@
                       label="Número de Vueltas"
                       max="3"
                       min="1"
-                      rounded-xl
+                      rounded="xl"
                       type="number"
                       variant="outlined"
                     />
@@ -122,7 +123,7 @@
                       label="Equipos para Playoffs"
                       max="8"
                       min="2"
-                      rounded-xl
+                      rounded="xl"
                       type="number"
                       variant="outlined"
                     />
@@ -136,7 +137,7 @@
                       label="Equipos por Grupo"
                       max="6"
                       min="2"
-                      rounded-xl
+                      rounded="xl"
                       type="number"
                       variant="outlined"
                     />
@@ -148,7 +149,7 @@
                       auto-grow
                       color="primary"
                       label="Reglas del Torneo (Opcional)"
-                      rounded-xl
+                      rounded="xl"
                       rows="4"
                       variant="outlined"
                     />
@@ -160,7 +161,7 @@
         </v-col>
 
         <v-col cols="12" md="4">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-information</v-icon>
               Resumen
@@ -198,9 +199,10 @@
       <!-- Actions -->
       <v-row class="mt-6">
         <v-col cols="12">
-          <div class="d-flex gap-3">
+          <div class="d-flex" style="gap: 10px;">
             <v-btn
-              color="secondary"
+              color="white"
+              rounded="xl"
               variant="outlined"
               @click="goBack"
             >
@@ -210,6 +212,8 @@
               color="primary"
               :disabled="!valid"
               :loading="creating"
+              rounded="xl"
+              variant="elevated"
               @click="createTournament"
             >
               Crear Torneo

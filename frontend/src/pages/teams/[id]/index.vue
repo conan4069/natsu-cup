@@ -40,7 +40,7 @@
               <div>
                 <h1 class="text-h4 font-weight-bold mb-2" style="color: #f3f2e5;">{{ team.name }}</h1>
                 <p class="text-body-1" style="color: #deddd6;">
-                  Equipo del campeonato Natsu Cup
+                  Equipo del campeonato
                 </p>
               </div>
             </div>
@@ -52,7 +52,7 @@
       <v-row>
         <!-- Team info card -->
         <v-col cols="12" md="6">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-shield-account</v-icon>
               Información del Equipo
@@ -95,7 +95,7 @@
 
         <!-- Statistics card -->
         <v-col cols="12" md="6">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-chart-line</v-icon>
               Estadísticas
@@ -177,7 +177,7 @@
       <!-- Recent tournaments -->
       <v-row class="mt-6">
         <v-col cols="12">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-trophy</v-icon>
               Torneos Recientes

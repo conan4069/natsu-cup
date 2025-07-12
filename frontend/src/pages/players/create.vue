@@ -14,7 +14,7 @@
           <div>
             <h1 class="text-h4 font-weight-bold mb-2 page-title">Nuevo Jugador</h1>
             <p class="text-body-1 page-subtitle">
-              Agrega un nuevo jugador al formato de la Natsu Cup
+              Agrega un nuevo jugador al formato
             </p>
           </div>
         </div>
@@ -24,7 +24,7 @@
     <!-- Formulario -->
     <v-row justify="center">
       <v-col cols="12" lg="6" md="8">
-        <v-card>
+        <v-card rounded="xl">
           <v-card-title class="text-h6 pa-6 pb-0">
             Información del Jugador
           </v-card-title>

@@ -7,7 +7,7 @@
           <div>
             <h1 class="text-h4 font-weight-bold mb-2 page-title">Equipos</h1>
             <p class="text-body-1 page-subtitle">
-              Gestiona los equipos del campeonato Natsu Cup
+              Gestiona los equipos del campeonato
             </p>
           </div>
           <v-btn
@@ -42,12 +42,12 @@
       <v-col class="d-flex justify-end" cols="12" md="6">
         <v-btn
           class="pt-3 pb-4"
-          color="primary"
+          color="blue-darken-2"
           :loading="loading"
           prepend-icon="mdi-refresh"
           rounded="xl"
           size="large"
-          variant="outlined"
+          variant="elevated"
           @click="loadTeams"
         >
           Actualizar
@@ -97,7 +97,7 @@
 
         <!-- Acciones -->
         <template #item.actions="{ item }">
-          <div class="d-flex gap-2">
+          <div class="d-flex justify-center align-center" style="gap: 3px;">
             <v-btn
               color="primary"
               density="comfortable"

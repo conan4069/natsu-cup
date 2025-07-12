@@ -7,11 +7,11 @@
       </v-alert>
 
       <!-- Configuración de equipos -->
-      <v-card class="mb-6" variant="outlined">
+      <v-card class="mb-6" variant="outlined" rounded="xl">
         <v-card-title class="text-subtitle-1 d-flex align-center justify-space-between">
           Asignación de equipos
           <v-btn
-            color="primary"
+            color="blue-darken-2"
             :loading="assigningTeams"
             prepend-icon="mdi-shuffle"
             rounded="xl"
@@ -19,7 +19,7 @@
             variant="elevated"
             @click="assignTeamsRandomly"
           >
-            Asignar equipos automáticamente
+            Asignar automáticamente
           </v-btn>
         </v-card-title>
         <v-card-text>
@@ -42,6 +42,7 @@
                 :key="participant.id"
                 class="participant-card mb-4"
                 variant="outlined"
+                rounded="xl"
               >
                 <v-card-text>
                   <div class="d-flex align-center mb-3">
@@ -65,24 +66,26 @@
                   <div class="team-assignment">
                     <h5 class="text-subtitle-2 mb-2">Equipo asignado:</h5>
                     <div v-if="participantTeamAssignments[participant.id]" class="selected-team">
-                      <v-chip
-                        class="mb-2"
-                        color="primary"
-                        size="large"
-                        variant="elevated"
-                      >
-                        {{ getTeamName(participantTeamAssignments[participant.id]) }}
-                      </v-chip>
-                      <v-btn
-                        color="error"
-                        prepend-icon="mdi-close"
-                        rounded="xl"
-                        size="small"
-                        variant="outlined"
-                        @click="removeTeamAssignment(participant.id)"
-                      >
-                        Quitar equipo
-                      </v-btn>
+                      <div class="d-flex align-center" style="gap: 5px;">
+                        <v-chip
+                          class="mb-2"
+                          color="blue-darken-2"
+                          size="large"
+                          variant="elevated"
+                        >
+                          {{ getTeamName(participantTeamAssignments[participant.id]) }}
+                        </v-chip>
+                        <v-btn
+                          color="error"
+                          prepend-icon="mdi-close"
+                          rounded="xl"
+                          size="small"
+                          variant="outlined"
+                          @click="removeTeamAssignment(participant.id)"
+                        >
+                          Quitar
+                        </v-btn>
+                      </div>
                     </div>
                     <div v-else class="no-team">
                       <v-alert class="mb-3" type="info" variant="tonal">
@@ -109,18 +112,21 @@
             <!-- Botón para crear equipos faltantes -->
             <div v-if="missingTeamsCount > 0" class="mt-4">
               <v-alert type="warning" variant="tonal">
-                <strong>Equipos faltantes:</strong> Se necesitan {{ missingTeamsCount }} equipos más.
-                <v-btn
-                  class="mt-2"
-                  color="primary"
-                  prepend-icon="mdi-plus"
-                  rounded="xl"
-                  size="small"
-                  variant="elevated"
-                  @click="goToCreateTeams"
-                >
-                  Crear equipos faltantes
-                </v-btn>
+                <div class="d-flex align-center" style="gap: 12px;">
+                  <span>
+                    <strong>Equipos faltantes:</strong> Se necesitan {{ missingTeamsCount }} equipos más.
+                  </span>
+                  <v-btn
+                    color="primary"
+                    prepend-icon="mdi-plus"
+                    rounded="xl"
+                    size="small"
+                    variant="elevated"
+                    @click="goToCreateTeams"
+                  >
+                    Crear equipo
+                  </v-btn>
+                </div>
               </v-alert>
             </div>
           </div>
