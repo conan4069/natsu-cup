@@ -5,8 +5,8 @@
       <v-col cols="12">
         <div class="d-flex align-center justify-space-between">
           <div>
-            <h1 class="text-h4 font-weight-bold mb-2">Equipos</h1>
-            <p class="text-body-1 text-grey-darken-1">
+            <h1 class="text-h4 font-weight-bold mb-2 page-title">Equipos</h1>
+            <p class="text-body-1 page-subtitle">
               Gestiona los equipos del campeonato Natsu Cup
             </p>
           </div>
@@ -41,7 +41,7 @@
       </v-col>
       <v-col class="d-flex justify-end" cols="12" md="6">
         <v-btn
-          class="pt-3 pb-4 "
+          class="pt-3 pb-4"
           color="primary"
           :loading="loading"
           prepend-icon="mdi-refresh"
@@ -64,102 +64,90 @@
         :items-per-page="10"
         :loading="loading"
       >
-        <!-- imagen del equipo -->
-        <template #item.logo="{ item }">
-          <v-avatar class="mr-3" size="48">
-            <v-img
-              v-if="item.logo"
-              alt="Logo del equipo"
-              :src="item.logo"
-            />
-            <v-icon v-else color="grey" size="24">
-              mdi-shield
-            </v-icon>
-          </v-avatar>
-        </template>
-
-        <!-- Nombre del equipo -->
+        <!-- Logo y nombre -->
         <template #item.name="{ item }">
           <div class="d-flex align-center">
+            <v-avatar class="mr-3" size="40">
+              <v-img
+                v-if="item.logo"
+                alt="Logo"
+                :src="item.logo"
+              />
+              <v-icon v-else>mdi-shield</v-icon>
+            </v-avatar>
             <div>
               <div class="font-weight-medium text-h6">{{ item.name }}</div>
             </div>
           </div>
         </template>
 
-        <!-- Acciones -->
-        <template #item.actions="{ item }">
-          <div class="d-flex" style="gap: 15px">
-            <v-btn
-              color="primary"
-              icon="mdi-eye"
-              size="medium"
-              title="Ver detalles"
-              variant="text"
-              @click="viewTeam(item)"
-            />
-            <v-btn
-              color="warning"
-              icon="mdi-pencil"
-              size="medium"
-              title="Editar"
-              variant="text"
-              @click="editTeam(item)"
-            />
-            <v-btn
-              color="error"
-              icon="mdi-delete"
-              size="small"
-              title="Eliminar"
-              variant="text"
-              @click="confirmDelete(item)"
-            />
+        <!-- Estadísticas -->
+        <template #item.stats="{ item }">
+          <div class="d-flex flex-column">
+            <div class="text-caption">
+              <v-icon size="small">mdi-trophy</v-icon>
+              {{ item.wins || 0 }} victorias
+            </div>
+            <div class="text-caption">
+              <v-icon size="small">mdi-soccer</v-icon>
+              {{ item.goals || 0 }} goles
+            </div>
           </div>
         </template>
 
-        <!-- Estado vacío -->
-        <template #no-data>
-          <div class="text-center py-8">
-            <v-icon class="mb-4" color="grey-lighten-1" size="64">
-              mdi-account-group
-            </v-icon>
-            <h3 class="text-h6 text-grey-darken-1 mb-2">
-              No hay equipos registrados
-            </h3>
-            <p class="text-body-2 text-grey-darken-1 mb-4">
-              Comienza agregando el primer equipo al campeonato
-            </p>
+        <!-- Acciones -->
+        <template #item.actions="{ item }">
+          <div class="d-flex gap-2">
             <v-btn
               color="primary"
-              prepend-icon="mdi-plus"
+              density="comfortable"
+              icon="mdi-eye"
               rounded="xl"
-              size="large"
-              @click="navigateToCreate"
-            >
-              Agregar Equipo
-            </v-btn>
+              size="small"
+              variant="outlined"
+              @click="viewTeam(item.id)"
+            />
+            <v-btn
+              color="warning"
+              density="comfortable"
+              icon="mdi-pencil"
+              rounded="xl"
+              size="small"
+              variant="outlined"
+              @click="editTeam(item.id)"
+            />
+            <v-btn
+              color="error"
+              density="comfortable"
+              icon="mdi-delete"
+              rounded="xl"
+              size="small"
+              variant="outlined"
+              @click="deleteTeam(item.id)"
+            />
           </div>
         </template>
       </v-data-table>
     </v-card>
 
-    <!-- Diálogo de confirmación de eliminación -->
-    <v-dialog v-model="deleteDialog" max-width="400">
+    <!-- Dialog de confirmación para eliminar -->
+    <v-dialog v-model="showDeleteDialog" max-width="400">
       <v-card>
         <v-card-title class="text-h6">
+          <v-icon start color="error">mdi-alert</v-icon>
           Confirmar eliminación
         </v-card-title>
         <v-card-text>
-          ¿Estás seguro de que quieres eliminar al equipo
-          <strong>{{ teamToDelete?.name }}</strong>?
+          ¿Estás seguro de que quieres eliminar el equipo "{{ teamToDelete?.name }}"?
           Esta acción no se puede deshacer.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn
+            color="grey"
             rounded="xl"
             variant="outlined"
-            @click="deleteDialog = false"
+            @click="showDeleteDialog = false"
           >
             Cancelar
           </v-btn>
@@ -168,7 +156,7 @@
             :loading="deleting"
             rounded="xl"
             variant="elevated"
-            @click="deleteTeam"
+            @click="confirmDelete"
           >
             Eliminar
           </v-btn>
@@ -182,36 +170,38 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { handleApiError, teamAPI } from '@/services/api'
+  import { useAppStore } from '@/stores/app'
 
-  // Router
+  // Router y Store
   const router = useRouter()
+  const appStore = useAppStore()
 
   // Estado reactivo
-  const teams = ref([])
   const loading = ref(false)
-  const searchQuery = ref('')
-  const deleteDialog = ref(false)
-  const teamToDelete = ref(null)
   const deleting = ref(false)
+  const teams = ref([])
+  const searchQuery = ref('')
+  const showDeleteDialog = ref(false)
+  const teamToDelete = ref(null)
 
   // Headers de la tabla
   const headers = [
-    { title: 'Logo', key: 'logo', sortable: false },
     { title: 'Equipo', key: 'name', sortable: true },
-    { title: 'Acciones', key: 'actions', sortable: false, align: 'end' },
+    { title: 'Estadísticas', key: 'stats', sortable: false },
+    { title: 'Acciones', key: 'actions', sortable: false, align: 'center' },
   ]
 
-  // Computed para filtrar equipos
+  // Computed
   const filteredTeams = computed(() => {
     if (!searchQuery.value) return teams.value
+
     const query = searchQuery.value.toLowerCase()
     return teams.value.filter(team =>
       team.name.toLowerCase().includes(query)
-      || team.id.toString().includes(query),
     )
   })
 
-  // Cargar equipos
+  // Métodos
   const loadTeams = async () => {
     loading.value = true
     try {
@@ -219,63 +209,67 @@
       teams.value = response.data
     } catch (error) {
       const errorInfo = handleApiError(error)
+      appStore.showError(`Error al cargar equipos: ${errorInfo.message}`)
       console.error('Error al cargar equipos:', errorInfo.message)
-      teams.value = []
     } finally {
       loading.value = false
     }
   }
 
-  // Filtrar equipos
   const filterTeams = () => {
     // La función se ejecuta automáticamente por el computed
   }
 
-  // Navegación
   const navigateToCreate = () => {
     router.push('/teams/create')
   }
 
-  const viewTeam = team => {
-    router.push(`/teams/${team.id}`)
+  const viewTeam = (id) => {
+    router.push(`/teams/${id}`)
   }
 
-  const editTeam = team => {
-    router.push(`/teams/${team.id}/edit`)
+  const editTeam = (id) => {
+    router.push(`/teams/${id}/edit`)
   }
 
-  // Eliminación
-  const confirmDelete = team => {
-    teamToDelete.value = team
-    deleteDialog.value = true
+  const deleteTeam = (id) => {
+    teamToDelete.value = teams.value.find(t => t.id === id)
+    showDeleteDialog.value = true
   }
 
-  const deleteTeam = async () => {
+  const confirmDelete = async () => {
     if (!teamToDelete.value) return
+
     deleting.value = true
     try {
       await teamAPI.deleteTeam(teamToDelete.value.id)
-      // Remover de la lista local
-      const index = teams.value.findIndex(t => t.id === teamToDelete.value.id)
-      if (index !== -1) {
-        teams.value.splice(index, 1)
-      }
-      deleteDialog.value = false
-      teamToDelete.value = null
+      appStore.showSuccess('Equipo eliminado exitosamente')
+      await loadTeams()
     } catch (error) {
       const errorInfo = handleApiError(error)
+      appStore.showError(`Error al eliminar equipo: ${errorInfo.message}`)
       console.error('Error al eliminar equipo:', errorInfo.message)
     } finally {
       deleting.value = false
+      showDeleteDialog.value = false
+      teamToDelete.value = null
     }
   }
 
-  // Cargar datos al montar el componente
+  // Cargar datos al montar
   onMounted(() => {
     loadTeams()
   })
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
+.page-title {
+  color: white !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.page-subtitle {
+  color: #f3f2e5 !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
 </style>

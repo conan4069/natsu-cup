@@ -12,8 +12,8 @@
             @click="goBack"
           />
           <div>
-            <h1 class="text-h4 font-weight-bold mb-2" style="color: #f3f2e5;">Nuevo Jugador</h1>
-            <p class="text-body-1" style="color: #deddd6;">
+            <h1 class="text-h4 font-weight-bold mb-2 page-title">Nuevo Jugador</h1>
+            <p class="text-body-1 page-subtitle">
               Agrega un nuevo jugador al formato de la Natsu Cup
             </p>
           </div>
@@ -70,51 +70,42 @@
   import { useRouter } from 'vue-router'
   import PlayerForm from '@/components/PlayerForm.vue'
   import { handleApiError, playerAPI } from '@/services/api'
+  import { useAppStore } from '@/stores/app'
 
-  // Router
+  // Router y Store
   const router = useRouter()
+  const appStore = useAppStore()
 
   // Referencias
   const playerFormRef = ref(null)
+
+  // Estado reactivo
   const formValid = ref(false)
   const saving = ref(false)
 
-  // Navegación
+  // Métodos
   const goBack = () => {
     router.push('/players')
   }
 
-  // Manejar cambios de validación
   const handleValidChange = valid => {
     formValid.value = valid
   }
 
-  // Guardar jugador
   const savePlayer = async () => {
     if (!formValid.value) return
 
     saving.value = true
     try {
-      // Obtener FormData del formulario
       const formData = playerFormRef.value.getFormData()
+      const response = await playerAPI.createPlayer(formData)
 
-      // Enviar a la API
-      await playerAPI.createPlayer(formData)
-
-      // Redirigir al listado con mensaje de éxito
-      router.push({
-        path: '/players',
-        query: {
-          success: 'true',
-          message: 'Jugador creado exitosamente',
-        },
-      })
+      appStore.showSuccess('Jugador creado exitosamente')
+      router.push(`/players/${response.data.id}`)
     } catch (error) {
       const errorInfo = handleApiError(error)
+      appStore.showError(`Error al crear jugador: ${errorInfo.message}`)
       console.error('Error al crear jugador:', errorInfo.message)
-
-    // Aquí podrías mostrar una notificación de error
-    // Por ejemplo, usando un snackbar o toast
     } finally {
       saving.value = false
     }
@@ -122,5 +113,13 @@
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
+.page-title {
+  color: white !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.page-subtitle {
+  color: #f3f2e5 !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
 </style>

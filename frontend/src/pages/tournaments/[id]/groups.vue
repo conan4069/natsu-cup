@@ -10,7 +10,7 @@
       <v-icon class="mb-4" color="error" size="64">mdi-alert-circle</v-icon>
       <h3 class="text-h6 text-grey-darken-1 mb-2">Error al cargar torneo</h3>
       <p class="text-body-2 text-grey-darken-1 mb-4">{{ error }}</p>
-      <v-btn color="primary" @click="loadTournament">Reintentar</v-btn>
+      <v-btn color="primary" rounded="xl" @click="loadTournament">Reintentar</v-btn>
     </div>
 
     <!-- Tournament groups -->
@@ -26,8 +26,8 @@
               @click="goBack"
             />
             <div>
-              <h1 class="text-h4 font-weight-bold mb-2">{{ tournament.name }}</h1>
-              <p class="text-body-1 text-grey-darken-1">
+              <h1 class="text-h4 font-weight-bold mb-2 page-title">{{ tournament.name }}</h1>
+              <p class="text-body-1 page-subtitle">
                 Fase de Grupos - {{ tournament.format }}
               </p>
             </div>
@@ -36,143 +36,76 @@
       </v-row>
 
       <!-- Tournament info -->
-      <v-row class="mb-6">
-        <v-col cols="12" md="4">
+      <v-row>
+        <v-col cols="12" md="8">
           <v-card>
             <v-card-title class="text-h6">
               <v-icon start>mdi-information</v-icon>
-              Información del Torneo
+              Información de Grupos
             </v-card-title>
             <v-card-text>
-              <div class="d-flex justify-space-between mb-2">
-                <span class="text-body-2 text-grey-darken-1">Formato:</span>
-                <span class="font-weight-medium">{{ tournament.format }}</span>
-              </div>
-              <div class="d-flex justify-space-between mb-2">
-                <span class="text-body-2 text-grey-darken-1">Equipos:</span>
-                <span class="font-weight-medium">{{ tournament.team_count || 0 }}</span>
-              </div>
-              <div class="d-flex justify-space-between mb-2">
-                <span class="text-body-2 text-grey-darken-1">Estado:</span>
-                <v-chip
-                  :color="tournament.status === 'completed' ? 'success' : 'warning'"
-                  size="small"
-                  variant="outlined"
+              <div class="text-center py-8">
+                <v-icon class="mb-4" color="primary" size="64">mdi-account-group</v-icon>
+                <h3 class="text-h5 mb-2">Fase de Grupos</h3>
+                <p class="text-body-1 text-grey-darken-1 mb-4">
+                  Aquí se mostrarán los grupos del torneo cuando estén configurados
+                </p>
+                <v-btn
+                  color="primary"
+                  prepend-icon="mdi-account-group"
+                  rounded="xl"
+                  variant="elevated"
+                  @click="configureGroups"
                 >
-                  {{ tournament.status === 'completed' ? 'Completado' : 'En progreso' }}
-                </v-chip>
-              </div>
-              <div class="d-flex justify-space-between">
-                <span class="text-body-2 text-grey-darken-1">Partidos jugados:</span>
-                <span class="font-weight-medium">{{ playedMatches }}/{{ totalMatches }}</span>
+                  Configurar Grupos
+                </v-btn>
               </div>
             </v-card-text>
           </v-card>
         </v-col>
 
-        <v-col cols="12" md="8">
+        <v-col cols="12" md="4">
           <v-card>
             <v-card-title class="text-h6">
               <v-icon start>mdi-chart-line</v-icon>
-              Progreso de Grupos
+              Estadísticas de Grupos
             </v-card-title>
             <v-card-text>
-              <div class="d-flex align-center mb-4">
-                <div class="flex-grow-1 mr-4">
-                  <v-progress-linear
-                    color="primary"
-                    height="8"
-                    :model-value="progressPercentage"
-                    rounded
-                  />
-                </div>
-                <span class="text-body-2 font-weight-medium">
-                  {{ Math.round(progressPercentage) }}%
-                </span>
+              <div class="mb-3">
+                <span class="text-body-2 text-grey-darken-1">Grupos:</span>
+                <div class="font-weight-medium">{{ tournament.groups_count || 0 }}</div>
               </div>
-
-              <div class="d-flex justify-space-between text-caption text-grey-darken-1">
-                <span>Grupos Generados</span>
-                <span>Partidos Jugados</span>
-                <span>Clasificados</span>
+              <div class="mb-3">
+                <span class="text-body-2 text-grey-darken-1">Equipos por grupo:</span>
+                <div class="font-weight-medium">{{ tournament.teams_per_group || 0 }}</div>
               </div>
-
-              <div class="d-flex justify-space-between mt-2">
-                <v-chip
-                  :color="groupsGenerated ? 'success' : 'grey'"
-                  size="small"
-                  variant="outlined"
-                >
-                  {{ groupsGenerated ? 'Sí' : 'No' }}
-                </v-chip>
-                <v-chip
-                  :color="progressPercentage > 0 ? 'warning' : 'grey'"
-                  size="small"
-                  variant="outlined"
-                >
-                  {{ playedMatches }}/{{ totalMatches }}
-                </v-chip>
-                <v-chip
-                  :color="bracketReady ? 'success' : 'grey'"
-                  size="small"
-                  variant="outlined"
-                >
-                  {{ bracketReady ? 'Listo' : 'Pendiente' }}
-                </v-chip>
+              <div class="mb-3">
+                <span class="text-body-2 text-grey-darken-1">Partidos jugados:</span>
+                <div class="font-weight-medium">{{ tournament.matches_played || 0 }}</div>
               </div>
             </v-card-text>
           </v-card>
         </v-col>
       </v-row>
-
-      <!-- Groups component -->
-      <TournamentGroups
-        :tournament="tournament"
-      />
     </div>
   </v-container>
 </template>
 
 <script setup>
-  import { computed, onMounted, ref } from 'vue'
+  import { onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import TournamentGroups from '@/components/TournamentGroups.vue'
-  import { handleApiError, matchAPI, tournamentAPI } from '@/services/api'
+  import { handleApiError, tournamentAPI } from '@/services/api'
+  import { useAppStore } from '@/stores/app'
 
   // Router y Route
   const router = useRouter()
   const route = useRoute()
+  const appStore = useAppStore()
 
   // Estado reactivo
-  const tournament = ref(null)
-  const matches = ref([])
   const loading = ref(true)
   const error = ref(null)
-
-  // Computed
-  const totalMatches = computed(() => {
-    return matches.value.length
-  })
-
-  const playedMatches = computed(() => {
-    return matches.value.filter(match => match.played).length
-  })
-
-  const progressPercentage = computed(() => {
-    if (totalMatches.value === 0) return 0
-    return (playedMatches.value / totalMatches.value) * 100
-  })
-
-  const groupsGenerated = computed(() => {
-    // Verificar si hay partidos de grupos
-    return matches.value.some(match => match.stage === 'group')
-  })
-
-  const bracketReady = computed(() => {
-    // Verificar si todos los partidos de grupos están completados
-    const groupMatches = matches.value.filter(match => match.stage === 'group')
-    return groupMatches.length > 0 && groupMatches.every(match => match.played)
-  })
+  const tournament = ref(null)
 
   // Cargar torneo
   const loadTournament = async () => {
@@ -182,25 +115,12 @@
     error.value = null
 
     try {
-      console.log('Cargando torneo con ID:', tournamentId)
-
-      // Cargar datos del torneo
-      const tournamentResponse = await tournamentAPI.getTournament(tournamentId)
-      tournament.value = tournamentResponse.data
-      console.log('Datos del torneo cargados:', tournament.value)
-
-      // Cargar partidos del torneo
-      try {
-        const matchesResponse = await matchAPI.getTournamentMatches(tournamentId)
-        matches.value = matchesResponse.data
-        console.log('Partidos del torneo cargados:', matches.value)
-      } catch (matchesError) {
-        console.error('Error al cargar partidos:', matchesError)
-        matches.value = []
-      }
+      const response = await tournamentAPI.getTournament(tournamentId)
+      tournament.value = response.data
     } catch (error_) {
       const errorInfo = handleApiError(error_)
       error.value = errorInfo.message
+      appStore.showError(`Error al cargar torneo: ${errorInfo.message}`)
       console.error('Error al cargar torneo:', errorInfo.message)
     } finally {
       loading.value = false
@@ -212,12 +132,25 @@
     router.push(`/tournaments/${route.params.id}`)
   }
 
-  // Cargar datos al montar el componente
+  const configureGroups = () => {
+    // TODO: Implementar configuración de grupos
+    console.log('Configurar grupos')
+  }
+
+  // Cargar datos al montar
   onMounted(() => {
     loadTournament()
   })
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
+.page-title {
+  color: white !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.page-subtitle {
+  color: #f3f2e5 !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
 </style>

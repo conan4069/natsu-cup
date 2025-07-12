@@ -5,8 +5,8 @@
       <v-col cols="12">
         <div class="d-flex align-center justify-space-between">
           <div>
-            <h1 class="text-h4 font-weight-bold mb-2" style="color: #f3f2e5;">Jugadores</h1>
-            <p class="text-body-1" style="color: #deddd6;">
+            <h1 class="text-h4 font-weight-bold mb-2 page-title">Jugadores</h1>
+            <p class="text-body-1 page-subtitle">
               Gestiona los jugadores del campeonato Natsu Cup
             </p>
           </div>
@@ -64,102 +64,93 @@
         :items-per-page="10"
         :loading="loading"
       >
-        <!-- Avatar del jugador -->
-        <template #item.avatar="{ item }">
-          <v-avatar class="mr-3" size="48">
-            <v-img
-              v-if="item.avatar"
-              alt="Avatar del jugador"
-              :src="item.avatar"
-            />
-            <v-icon v-else color="grey" size="24">
-              mdi-account
-            </v-icon>
-          </v-avatar>
-        </template>
-
-        <!-- Nombre del jugador -->
-        <template #item.display_name="{ item }">
+        <!-- Avatar y nombre -->
+        <template #item.name="{ item }">
           <div class="d-flex align-center">
+            <v-avatar class="mr-3" size="40">
+              <v-img
+                v-if="item.avatar"
+                alt="Avatar"
+                :src="item.avatar"
+              />
+              <v-icon v-else>mdi-account</v-icon>
+            </v-avatar>
             <div>
               <div class="font-weight-medium text-h6">{{ item.display_name }}</div>
+              <div v-if="item.nickname" class="text-caption text-grey-darken-1">
+                {{ item.nickname }}
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Estadísticas -->
+        <template #item.stats="{ item }">
+          <div class="d-flex flex-column">
+            <div class="text-caption">
+              <v-icon size="small">mdi-soccer</v-icon>
+              {{ item.goals || 0 }} goles
+            </div>
+            <div class="text-caption">
+              <v-icon size="small">mdi-handshake</v-icon>
+              {{ item.assists || 0 }} asistencias
             </div>
           </div>
         </template>
 
         <!-- Acciones -->
         <template #item.actions="{ item }">
-          <div class="d-flex" style="gap: 15px">
+          <div class="d-flex gap-2">
             <v-btn
               color="primary"
+              density="comfortable"
               icon="mdi-eye"
-              size="medium"
-              title="Ver detalles"
-              variant="text"
-              @click="viewPlayer(item)"
+              rounded="xl"
+              size="small"
+              variant="outlined"
+              @click="viewPlayer(item.id)"
             />
             <v-btn
               color="warning"
+              density="comfortable"
               icon="mdi-pencil"
-              size="medium"
-              title="Editar"
-              variant="text"
-              @click="editPlayer(item)"
+              rounded="xl"
+              size="small"
+              variant="outlined"
+              @click="editPlayer(item.id)"
             />
             <v-btn
               color="error"
+              density="comfortable"
               icon="mdi-delete"
-              size="small"
-              title="Eliminar"
-              variant="text"
-              @click="confirmDelete(item)"
-            />
-          </div>
-        </template>
-
-        <!-- Estado vacío -->
-        <template #no-data>
-          <div class="text-center py-8">
-            <v-icon class="mb-4" color="grey-lighten-1" size="64">
-              mdi-account-group
-            </v-icon>
-            <h3 class="text-h6 text-grey-darken-1 mb-2">
-              No hay jugadores registrados
-            </h3>
-            <p class="text-body-2 text-grey-darken-1 mb-4">
-              Comienza agregando el primer jugador al campeonato
-            </p>
-            <v-btn
-              color="primary"
-              prepend-icon="mdi-plus"
               rounded="xl"
-              size="large"
-              @click="navigateToCreate"
-            >
-              Agregar Jugador
-            </v-btn>
+              size="small"
+              variant="outlined"
+              @click="deletePlayer(item.id)"
+            />
           </div>
         </template>
       </v-data-table>
     </v-card>
 
-    <!-- Diálogo de confirmación de eliminación -->
-    <v-dialog v-model="deleteDialog" max-width="400">
+    <!-- Dialog de confirmación para eliminar -->
+    <v-dialog v-model="showDeleteDialog" max-width="400">
       <v-card>
         <v-card-title class="text-h6">
+          <v-icon start color="error">mdi-alert</v-icon>
           Confirmar eliminación
         </v-card-title>
         <v-card-text>
-          ¿Estás seguro de que quieres eliminar al jugador
-          <strong>{{ playerToDelete?.display_name }}</strong>?
+          ¿Estás seguro de que quieres eliminar al jugador "{{ playerToDelete?.display_name }}"?
           Esta acción no se puede deshacer.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn
+            color="grey"
             rounded="xl"
             variant="outlined"
-            @click="deleteDialog = false"
+            @click="showDeleteDialog = false"
           >
             Cancelar
           </v-btn>
@@ -168,7 +159,7 @@
             :loading="deleting"
             rounded="xl"
             variant="elevated"
-            @click="deletePlayer"
+            @click="confirmDelete"
           >
             Eliminar
           </v-btn>
@@ -182,37 +173,39 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { handleApiError, playerAPI } from '@/services/api'
+  import { useAppStore } from '@/stores/app'
 
-  // Router
+  // Router y Store
   const router = useRouter()
+  const appStore = useAppStore()
 
   // Estado reactivo
-  const players = ref([])
   const loading = ref(false)
-  const searchQuery = ref('')
-  const deleteDialog = ref(false)
-  const playerToDelete = ref(null)
   const deleting = ref(false)
+  const players = ref([])
+  const searchQuery = ref('')
+  const showDeleteDialog = ref(false)
+  const playerToDelete = ref(null)
 
   // Headers de la tabla
   const headers = [
-    { title: 'Avatar', key: 'avatar', sortable: false },
-    { title: 'Jugador', key: 'display_name', sortable: true },
-    { title: 'Acciones', key: 'actions', sortable: false },
+    { title: 'Nombre', key: 'name', sortable: true },
+    { title: 'Estadísticas', key: 'stats', sortable: false },
+    { title: 'Acciones', key: 'actions', sortable: false, align: 'center' },
   ]
 
-  // Computed para filtrar jugadores
+  // Computed
   const filteredPlayers = computed(() => {
     if (!searchQuery.value) return players.value
 
     const query = searchQuery.value.toLowerCase()
     return players.value.filter(player =>
-      player.display_name.toLowerCase().includes(query)
-      || player.id.toString().includes(query),
+      player.display_name.toLowerCase().includes(query) ||
+      player.nickname.toLowerCase().includes(query)
     )
   })
 
-  // Cargar jugadores
+  // Métodos
   const loadPlayers = async () => {
     loading.value = true
     try {
@@ -220,69 +213,67 @@
       players.value = response.data
     } catch (error) {
       const errorInfo = handleApiError(error)
+      appStore.showError(`Error al cargar jugadores: ${errorInfo.message}`)
       console.error('Error al cargar jugadores:', errorInfo.message)
-      players.value = []
     } finally {
       loading.value = false
     }
   }
 
-  // Filtrar jugadores
   const filterPlayers = () => {
-  // La función se ejecuta automáticamente por el computed
+    // La función se ejecuta automáticamente por el computed
   }
 
-  // Navegación
   const navigateToCreate = () => {
     router.push('/players/create')
   }
 
-  const viewPlayer = player => {
-    router.push(`/players/${player.id}`)
+  const viewPlayer = (id) => {
+    router.push(`/players/${id}`)
   }
 
-  const editPlayer = player => {
-    router.push(`/players/${player.id}/edit`)
+  const editPlayer = (id) => {
+    router.push(`/players/${id}/edit`)
   }
 
-  // Eliminación
-  const confirmDelete = player => {
-    playerToDelete.value = player
-    deleteDialog.value = true
+  const deletePlayer = (id) => {
+    playerToDelete.value = players.value.find(p => p.id === id)
+    showDeleteDialog.value = true
   }
 
-  const deletePlayer = async () => {
+  const confirmDelete = async () => {
     if (!playerToDelete.value) return
 
     deleting.value = true
     try {
       await playerAPI.deletePlayer(playerToDelete.value.id)
-
-      // Remover de la lista local
-      const index = players.value.findIndex(p => p.id === playerToDelete.value.id)
-      if (index !== -1) {
-        players.value.splice(index, 1)
-      }
-
-      deleteDialog.value = false
-      playerToDelete.value = null
-
-    // Aquí podrías mostrar una notificación de éxito
+      appStore.showSuccess('Jugador eliminado exitosamente')
+      await loadPlayers()
     } catch (error) {
       const errorInfo = handleApiError(error)
+      appStore.showError(`Error al eliminar jugador: ${errorInfo.message}`)
       console.error('Error al eliminar jugador:', errorInfo.message)
-    // Aquí podrías mostrar una notificación de error
     } finally {
       deleting.value = false
+      showDeleteDialog.value = false
+      playerToDelete.value = null
     }
   }
 
-  // Cargar datos al montar el componente
+  // Cargar datos al montar
   onMounted(() => {
     loadPlayers()
   })
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
+.page-title {
+  color: white !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.page-subtitle {
+  color: #f3f2e5 !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
 </style>

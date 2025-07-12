@@ -35,30 +35,84 @@
         </v-col>
       </v-row>
 
-      <!-- Formulario del torneo -->
-      <v-card class="mb-6">
-        <v-card-title class="text-h6 pa-6 pb-0">
-          Información del torneo
-        </v-card-title>
-        <v-card-text class="pa-6">
-          <TournamentForm
-            ref="tournamentFormRef"
-            mode="edit"
-            :readonly="tournamentHasMatches"
-            :tournament="tournament"
-            @valid-change="handleValidChange"
-          />
-        </v-card-text>
-      </v-card>
-
-      <!-- Tabs para configuración -->
+      <!-- Tabs principales -->
       <v-card>
         <v-tabs v-model="activeTab" color="primary" rounded="xl">
-          <v-tab value="participants">Participantes</v-tab>
-          <v-tab value="teams">Configuración de equipos</v-tab>
+          <v-tab value="tournament">
+            <v-icon start>mdi-trophy</v-icon>
+            Información del Torneo
+          </v-tab>
+          <v-tab value="participants">
+            <v-icon start>mdi-account-group</v-icon>
+            Participantes
+          </v-tab>
+          <v-tab value="teams">
+            <v-icon start>mdi-shield</v-icon>
+            Configuración de Equipos
+          </v-tab>
         </v-tabs>
 
         <v-window v-model="activeTab">
+          <!-- Tab de información del torneo -->
+          <v-window-item value="tournament">
+            <v-card-text class="pa-6">
+              <v-row>
+                <v-col cols="12" md="8">
+                  <v-card variant="outlined">
+                    <v-card-title class="text-h6 pa-6 pb-0">
+                      <v-icon start>mdi-trophy</v-icon>
+                      Configuración del Torneo
+                    </v-card-title>
+                    <v-card-text class="pa-6">
+                      <TournamentForm
+                        ref="tournamentFormRef"
+                        mode="edit"
+                        :readonly="tournamentHasMatches"
+                        :tournament="tournament"
+                        @valid-change="handleValidChange"
+                      />
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+
+                <v-col cols="12" md="4">
+                  <v-card variant="outlined">
+                    <v-card-title class="text-h6">
+                      <v-icon start>mdi-information</v-icon>
+                      Resumen
+                    </v-card-title>
+                    <v-card-text>
+                      <div class="mb-3">
+                        <span class="text-body-2 text-grey-darken-1">Tipo:</span>
+                        <div class="font-weight-medium">{{ getCompetitionTypeText(tournamentData.competition_type) }}</div>
+                      </div>
+                      <div class="mb-3">
+                        <span class="text-body-2 text-grey-darken-1">Formato:</span>
+                        <div class="font-weight-medium">{{ tournamentData.format }}</div>
+                      </div>
+                      <div class="mb-3">
+                        <span class="text-body-2 text-grey-darken-1">Equipos:</span>
+                        <div class="font-weight-medium">{{ tournamentData.total_teams }}</div>
+                      </div>
+                      <div v-if="showLeagueFields" class="mb-3">
+                        <span class="text-body-2 text-grey-darken-1">Vueltas:</span>
+                        <div class="font-weight-medium">{{ tournamentData.league_rounds }}</div>
+                      </div>
+                      <div v-if="showLeagueFields" class="mb-3">
+                        <span class="text-body-2 text-grey-darken-1">Playoffs:</span>
+                        <div class="font-weight-medium">{{ tournamentData.playoff_teams }} equipos</div>
+                      </div>
+                      <div v-if="showGroupFields" class="mb-3">
+                        <span class="text-body-2 text-grey-darken-1">Por Grupo:</span>
+                        <div class="font-weight-medium">{{ tournamentData.teams_per_group }} equipos</div>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-window-item>
+
           <!-- Tab de participantes -->
           <v-window-item value="participants">
             <v-card-text class="pa-6">
@@ -157,7 +211,7 @@
   const tournamentFormRef = ref(null)
 
   // Estado reactivo
-  const activeTab = ref('participants')
+  const activeTab = ref('tournament')
   const loading = ref(true)
   const saving = ref(false)
   const formValid = ref(false)
@@ -168,10 +222,13 @@
   const tournamentData = ref({
     name: '',
     format: '1v1',
+    competition_type: 'cup',
     total_teams: 8,
     has_group_stage: false,
     has_knockout: true,
     teams_per_group: 4,
+    league_rounds: 1,
+    playoff_teams: 4,
     rules: '',
   })
 
@@ -192,6 +249,25 @@
     return formValid.value && participants.value.length > 1
   })
 
+  const showLeagueFields = computed(() => {
+    return tournamentData.value.competition_type === 'league' || tournamentData.value.competition_type === 'hybrid'
+  })
+
+  const showGroupFields = computed(() => {
+    return tournamentData.value.competition_type === 'groups'
+  })
+
+  // Métodos
+  const getCompetitionTypeText = type => {
+    const typeMap = {
+      cup: 'Copa (Eliminatoria directa)',
+      league: 'Liga (Todos contra todos)',
+      hybrid: 'Liga + Playoffs',
+      groups: 'Fase de grupos + Eliminatoria',
+    }
+    return typeMap[type] || 'Desconocido'
+  }
+
   // Cargar torneo
   const loadTournament = async () => {
     const tournamentId = route.params.id
@@ -205,10 +281,13 @@
       tournamentData.value = {
         name: tournament.value.name || '',
         format: tournament.value.format || '1v1',
+        competition_type: tournament.value.competition_type || 'cup',
         total_teams: tournament.value.total_teams || 8,
         has_group_stage: tournament.value.has_group_stage || false,
         has_knockout: tournament.value.has_knockout === undefined ? true : tournament.value.has_knockout,
         teams_per_group: tournament.value.teams_per_group || 4,
+        league_rounds: tournament.value.league_rounds || 1,
+        playoff_teams: tournament.value.playoff_teams || 4,
         rules: tournament.value.rules || '',
       }
 

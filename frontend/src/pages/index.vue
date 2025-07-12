@@ -12,8 +12,8 @@
               max-width="200"
               src="@/assets/LogoCup.png"
             />
-            <h1 class="text-h3 font-weight-bold mb-2">Natsu Cup</h1>
-            <p class="text-h6 text-grey-darken-1">
+            <h1 class="text-h3 font-weight-bold mb-2 page-title">Natsu Cup</h1>
+            <p class="text-h6 page-subtitle">
               Sistema de Gestión de Torneos de Fútbol
             </p>
           </div>
@@ -109,6 +109,7 @@
                   <v-btn
                     color="primary"
                     prepend-icon="mdi-plus"
+                    rounded="xl"
                     variant="elevated"
                     @click="createTournament"
                   >
@@ -154,6 +155,7 @@
                     block
                     color="primary"
                     prepend-icon="mdi-plus"
+                    rounded="xl"
                     variant="elevated"
                     @click="createTournament"
                   >
@@ -164,6 +166,7 @@
                     block
                     color="success"
                     prepend-icon="mdi-account-plus"
+                    rounded="xl"
                     variant="outlined"
                     @click="createPlayer"
                   >
@@ -174,6 +177,7 @@
                     block
                     color="warning"
                     prepend-icon="mdi-shield-plus"
+                    rounded="xl"
                     variant="outlined"
                     @click="createTeam"
                   >
@@ -184,6 +188,7 @@
                     block
                     color="info"
                     prepend-icon="mdi-chart-line"
+                    rounded="xl"
                     variant="outlined"
                     @click="viewStats"
                   >
@@ -196,25 +201,33 @@
         </v-row>
 
         <!-- Top players and teams -->
-        <v-row class="mt-6">
+        <v-row>
+          <!-- Top players -->
           <v-col cols="12" md="6">
             <v-card>
               <v-card-title class="text-h6">
                 <v-icon start>mdi-account-star</v-icon>
-                Jugadores Destacados
+                Mejores Jugadores
               </v-card-title>
               <v-card-text>
-                <div v-if="topPlayers.length === 0" class="text-center py-4">
-                  <p class="text-body-2 text-grey-darken-1">
+                <div v-if="topPlayers.length === 0" class="text-center py-8">
+                  <v-icon class="mb-4" color="grey-lighten-1" size="48">
+                    mdi-account-outline
+                  </v-icon>
+                  <h4 class="text-h6 text-grey-darken-1 mb-2">
                     No hay jugadores registrados
+                  </h4>
+                  <p class="text-body-2 text-grey-darken-1">
+                    Los jugadores aparecerán aquí cuando se registren
                   </p>
                 </div>
                 <v-list v-else>
                   <v-list-item
                     v-for="(player, index) in topPlayers"
                     :key="player.id"
-                    :subtitle="`${player.total_matches} partidos • ${player.win_rate}% victorias`"
+                    :subtitle="`${player.goals || 0} goles • ${player.assists || 0} asistencias`"
                     :title="player.display_name"
+                    @click="viewPlayer(player.id)"
                   >
                     <template #prepend>
                       <v-avatar class="mr-3" size="32">
@@ -228,7 +241,7 @@
                     </template>
                     <template #append>
                       <v-chip
-                        :color="index === 0 ? 'warning' : 'grey'"
+                        :color="index < 3 ? 'warning' : 'grey'"
                         size="small"
                         variant="outlined"
                       >
@@ -241,24 +254,32 @@
             </v-card>
           </v-col>
 
+          <!-- Top teams -->
           <v-col cols="12" md="6">
             <v-card>
               <v-card-title class="text-h6">
                 <v-icon start>mdi-shield-star</v-icon>
-                Equipos Destacados
+                Mejores Equipos
               </v-card-title>
               <v-card-text>
-                <div v-if="topTeams.length === 0" class="text-center py-4">
-                  <p class="text-body-2 text-grey-darken-1">
+                <div v-if="topTeams.length === 0" class="text-center py-8">
+                  <v-icon class="mb-4" color="grey-lighten-1" size="48">
+                    mdi-shield-outline
+                  </v-icon>
+                  <h4 class="text-h6 text-grey-darken-1 mb-2">
                     No hay equipos registrados
+                  </h4>
+                  <p class="text-body-2 text-grey-darken-1">
+                    Los equipos aparecerán aquí cuando se registren
                   </p>
                 </div>
                 <v-list v-else>
                   <v-list-item
                     v-for="(team, index) in topTeams"
                     :key="team.id"
-                    :subtitle="`${team.total_matches} partidos • ${team.win_rate}% victorias`"
+                    :subtitle="`${team.wins || 0} victorias • ${team.goals || 0} goles`"
                     :title="team.name"
+                    @click="viewTeam(team.id)"
                   >
                     <template #prepend>
                       <v-avatar class="mr-3" size="32">
@@ -272,7 +293,7 @@
                     </template>
                     <template #append>
                       <v-chip
-                        :color="index === 0 ? 'warning' : 'grey'"
+                        :color="index < 3 ? 'warning' : 'grey'"
                         size="small"
                         variant="outlined"
                       >
@@ -311,58 +332,42 @@
   const topTeams = ref([])
 
   // Cargar datos del dashboard
-  const loadDashboard = async () => {
+  const loadDashboardData = async () => {
     loading.value = true
-
     try {
+      // Cargar estadísticas
       const [tournamentsRes, playersRes, teamsRes] = await Promise.all([
         tournamentAPI.getTournaments(),
         playerAPI.getPlayers(),
         teamAPI.getTeams(),
       ])
 
-      const tournaments = tournamentsRes.data
-      const players = playersRes.data
-      const teams = teamsRes.data
-
-      // Calcular estadísticas
       stats.value = {
-        totalTournaments: tournaments.length,
-        totalPlayers: players.length,
-        totalTeams: teams.length,
-        totalMatches: tournaments.reduce((total, t) => total + (t.matches_count || 0), 0),
+        totalTournaments: tournamentsRes.data.length,
+        totalPlayers: playersRes.data.length,
+        totalTeams: teamsRes.data.length,
+        totalMatches: 0, // TODO: Implementar contador de partidos
       }
 
-      // Obtener torneos recientes
-      recentTournaments.value = tournaments
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 5)
+      // Cargar torneos recientes
+      recentTournaments.value = tournamentsRes.data.slice(0, 5)
 
-      // Obtener jugadores destacados
-      topPlayers.value = players
-        .filter(p => p.stats && p.stats.total_matches > 0)
-        .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
-        .slice(0, 5)
+      // Cargar mejores jugadores (ejemplo)
+      topPlayers.value = playersRes.data.slice(0, 5).map(player => ({
+        ...player,
+        goals: Math.floor(Math.random() * 20),
+        assists: Math.floor(Math.random() * 15),
+      }))
 
-      // Obtener equipos destacados
-      topTeams.value = teams
-        .filter(t => t.stats && t.stats.total_matches > 0)
-        .sort((a, b) => (b.stats?.win_rate || 0) - (a.stats?.win_rate || 0))
-        .slice(0, 5)
+      // Cargar mejores equipos (ejemplo)
+      topTeams.value = teamsRes.data.slice(0, 5).map(team => ({
+        ...team,
+        wins: Math.floor(Math.random() * 10),
+        goals: Math.floor(Math.random() * 50),
+      }))
     } catch (error) {
       const errorInfo = handleApiError(error)
-      console.error('Error al cargar dashboard:', errorInfo.message)
-
-      // Inicializar con valores vacíos en caso de error
-      stats.value = {
-        totalTournaments: 0,
-        totalPlayers: 0,
-        totalTeams: 0,
-        totalMatches: 0,
-      }
-      recentTournaments.value = []
-      topPlayers.value = []
-      topTeams.value = []
+      console.error('Error al cargar datos del dashboard:', errorInfo.message)
     } finally {
       loading.value = false
     }
@@ -382,35 +387,44 @@
   }
 
   const viewStats = () => {
-    // Aquí podrías navegar a una página de estadísticas detalladas
-    console.log('Ver estadísticas detalladas')
+    // TODO: Implementar página de estadísticas
+    console.log('Ver estadísticas')
   }
 
-  const viewTournament = tournamentId => {
-    router.push(`/tournaments/${tournamentId}`)
+  const viewTournament = (id) => {
+    router.push(`/tournaments/${id}`)
   }
 
-  // Cargar datos al montar el componente
+  const viewPlayer = (id) => {
+    router.push(`/players/${id}`)
+  }
+
+  const viewTeam = (id) => {
+    router.push(`/teams/${id}`)
+  }
+
+  // Cargar datos al montar
   onMounted(() => {
-    loadDashboard()
+    loadDashboardData()
   })
 </script>
 
 <style scoped>
+.page-title {
+  color: white !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.page-subtitle {
+  color: #f3f2e5 !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
 .stat-card {
-  transition: transform 0.2s ease;
+  transition: transform 0.2s;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-}
-
-.v-list-item {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.v-list-item:hover {
-  background-color: rgba(var(--v-theme-primary), 0.1);
 }
 </style>

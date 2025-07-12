@@ -10,7 +10,7 @@
       <v-icon class="mb-4" color="error" size="64">mdi-alert-circle</v-icon>
       <h3 class="text-h6 text-grey-darken-1 mb-2">Error al crear torneo</h3>
       <p class="text-body-2 text-grey-darken-1 mb-4">{{ error }}</p>
-      <v-btn color="primary" @click="createTournament">Reintentar</v-btn>
+      <v-btn color="primary" rounded="xl" @click="createTournament">Reintentar</v-btn>
     </div>
 
     <!-- Form -->
@@ -27,8 +27,8 @@
               <v-icon>mdi-arrow-left</v-icon>
             </v-btn>
             <div>
-              <h1 class="text-h4 font-weight-bold mb-2">Crear Nuevo Torneo</h1>
-              <p class="text-body-1 text-grey-darken-1">
+              <h1 class="text-h4 font-weight-bold mb-2 page-title">Crear Nuevo Torneo</h1>
+              <p class="text-body-1 page-subtitle">
                 Configura los detalles de tu torneo
               </p>
             </div>
