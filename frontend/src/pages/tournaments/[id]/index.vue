@@ -153,15 +153,18 @@
                 <v-icon start>mdi-shield</v-icon>
                 Equipos
               </v-tab>
-              <v-tab value="groups">
+              <!-- Mostrar pestaña de grupos solo si el torneo tiene fase de grupos -->
+              <v-tab v-if="showGroupsTab" value="groups">
                 <v-icon start>mdi-account-group</v-icon>
                 Grupos
               </v-tab>
-              <v-tab value="bracket">
+              <!-- Mostrar pestaña de eliminatoria solo si el torneo tiene eliminatoria -->
+              <v-tab v-if="showBracketTab" value="bracket">
                 <v-icon start>mdi-trophy</v-icon>
                 Eliminatoria
               </v-tab>
-              <v-tab value="league">
+              <!-- Mostrar pestaña de liga solo si el torneo es de tipo liga o híbrido -->
+              <v-tab v-if="showLeagueTab" value="league">
                 <v-icon start>mdi-chart-line</v-icon>
                 Liga
               </v-tab>
@@ -200,7 +203,7 @@
                 </v-card-text>
               </v-window-item>
 
-              <v-window-item value="groups">
+              <v-window-item v-if="showGroupsTab" value="groups">
                 <v-card-text class="pa-6">
                   <div class="text-center">
                     <v-btn
@@ -216,7 +219,7 @@
                 </v-card-text>
               </v-window-item>
 
-              <v-window-item value="bracket">
+              <v-window-item v-if="showBracketTab" value="bracket">
                 <v-card-text class="pa-6">
                   <div class="text-center">
                     <v-btn
@@ -232,7 +235,7 @@
                 </v-card-text>
               </v-window-item>
 
-              <v-window-item value="league">
+              <v-window-item v-if="showLeagueTab" value="league">
                 <v-card-text class="pa-6">
                   <div class="text-center">
                     <v-btn
@@ -272,7 +275,7 @@
 </template>
 
 <script setup>
-  import { onMounted, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { handleApiError, tournamentAPI } from '@/services/api'
   import { useAppStore } from '@/stores/app'
@@ -287,6 +290,20 @@
   const error = ref(null)
   const tournament = ref(null)
   const activeTab = ref('overview')
+
+  // Computed properties para mostrar/ocultar pestañas
+  const showGroupsTab = computed(() => {
+    return tournament.value?.has_group_stage === true
+  })
+
+  const showBracketTab = computed(() => {
+    return tournament.value?.has_knockout === true
+  })
+
+  const showLeagueTab = computed(() => {
+    return tournament.value?.competition_type === 'league'
+      || tournament.value?.competition_type === 'hybrid'
+  })
 
   // Cargar torneo
   const loadTournament = async () => {
