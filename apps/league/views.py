@@ -17,7 +17,7 @@ from .brackets import (
 )
 from .utils import (
     update_player_stats, update_team_stats, update_tournament_status,
-    generate_league_matches, update_tournament_standings
+    generate_league_matches, update_tournament_standings, update_group_standings
 )
 
 import random
@@ -613,6 +613,10 @@ class SaveMatchResultView(APIView):
         # Si es un partido de liga, actualizar clasificación
         if match.stage == 'league':
             update_tournament_standings(match.tournament.id)
+        
+        # Si es un partido de grupo, actualizar clasificación de grupos
+        if match.stage == 'group':
+            update_group_standings(match.tournament.id)
 
         return Response({'message': 'Match result saved successfully'}, status=200)
 

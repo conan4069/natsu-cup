@@ -65,9 +65,9 @@
               <span class="text-body-2 text-grey-darken-1">Progreso:</span>
               <div class="mt-1">
                 <v-progress-linear
-                  :model-value="progressPercentage"
                   color="primary"
                   height="8"
+                  :model-value="progressPercentage"
                   rounded
                 />
                 <div class="text-caption text-grey-darken-1 mt-1">

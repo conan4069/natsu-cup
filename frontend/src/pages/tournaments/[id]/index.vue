@@ -162,8 +162,8 @@
   import TournamentGroupsOverview from '@/components/TournamentGroupsOverview.vue'
   import TournamentLeagueOverview from '@/components/TournamentLeagueOverview.vue'
   import TournamentOverview from '@/components/TournamentOverview.vue'
-  import TournamentTeams from '@/components/TournamentTeams.vue'
   import TournamentStatsOverview from '@/components/TournamentStatsOverview.vue'
+  import TournamentTeams from '@/components/TournamentTeams.vue'
   import { handleApiError, tournamentAPI } from '@/services/api'
   import { useAppStore } from '@/stores/app'
 

@@ -109,6 +109,10 @@ class GroupStanding(models.Model):
     points = models.IntegerField(default=0)
     goals_for = models.IntegerField(default=0)
     goals_against = models.IntegerField(default=0)
+    matches_played = models.PositiveIntegerField(default=0)
+    wins = models.PositiveIntegerField(default=0)
+    draws = models.PositiveIntegerField(default=0)
+    losses = models.PositiveIntegerField(default=0)
 
     @property
     def goal_difference(self):

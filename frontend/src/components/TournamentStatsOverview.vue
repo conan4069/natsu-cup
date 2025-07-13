@@ -29,9 +29,9 @@
               <span class="text-body-2 text-grey-darken-1">Progreso general:</span>
               <div class="mt-1">
                 <v-progress-linear
-                  :model-value="stats.progressPercentage"
                   color="primary"
                   height="8"
+                  :model-value="stats.progressPercentage"
                   rounded
                 />
                 <div class="text-caption text-grey-darken-1 mt-1">
@@ -160,11 +160,11 @@
                   {{ phase.played }}/{{ phase.total }} partidos • {{ phase.goals }} goles
                 </div>
                 <v-progress-linear
-                  :model-value="phase.progress"
+                  class="mt-1"
                   color="primary"
                   height="4"
+                  :model-value="phase.progress"
                   rounded
-                  class="mt-1"
                 />
               </div>
             </div>
@@ -279,7 +279,7 @@
 
     const highestScoringMatch = playedMatches.reduce((max, match) => {
       const matchGoals = Object.values(match.goals || {}).reduce((a, b) => a + b, 0)
-      return matchGoals > max ? matchGoals : max
+      return Math.max(matchGoals, max)
     }, 0)
 
     const goallessMatches = playedMatches.filter(match => {

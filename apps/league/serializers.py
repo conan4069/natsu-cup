@@ -156,10 +156,17 @@ class MatchSerializer(serializers.ModelSerializer):
 
 class GroupStandingSerializer(serializers.ModelSerializer):
     team_entry = TeamEntrySerializer(read_only=True)
+    goal_difference = serializers.SerializerMethodField()
 
     class Meta:
         model = GroupStanding
-        fields = '__all__'
+        fields = [
+            'tournament', 'group_code', 'team_entry', 'points',
+            'goals_for', 'goals_against', 'matches_played', 'wins', 'draws', 'losses', 'goal_difference'
+        ]
+
+    def get_goal_difference(self, obj):
+        return obj.goal_difference
 
 class TournamentStandingSerializer(serializers.ModelSerializer):
     team_entry = TeamEntrySerializer(read_only=True)
