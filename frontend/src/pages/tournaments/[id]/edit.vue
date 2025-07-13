@@ -23,11 +23,12 @@
               class="mr-4"
               icon="mdi-arrow-left"
               variant="text"
+              color="white"
               @click="goBack"
             />
             <div class="flex-grow-1">
-              <h1 class="text-h4 font-weight-bold mb-2">Editar Torneo</h1>
-              <p class="text-body-1 text-grey-darken-1">
+              <h1 class="text-h4 font-weight-bold mb-2 text-white">Editar Torneo</h1>
+              <p class="text-body-1 text-white">
                 Configura "{{ tournament.name }}"
               </p>
             </div>
@@ -58,7 +59,7 @@
             <v-card-text class="pa-6">
               <v-row>
                 <v-col cols="12" md="8">
-                  <v-card variant="outlined">
+                  <v-card variant="outlined" rounded="xl">
                     <v-card-title class="text-h6 pa-6 pb-0">
                       <v-icon start>mdi-trophy</v-icon>
                       Configuración del Torneo
@@ -76,7 +77,7 @@
                 </v-col>
 
                 <v-col cols="12" md="4">
-                  <v-card variant="outlined">
+                  <v-card variant="outlined" rounded="xl">
                     <v-card-title class="text-h6">
                       <v-icon start>mdi-information</v-icon>
                       Resumen
@@ -121,6 +122,7 @@
                 class="mb-4"
                 type="warning"
                 variant="tonal"
+                rounded="xl"
               >
                 <strong>Advertencia:</strong> No se pueden cambiar los participantes porque ya se han generado partidos.
               </v-alert>
@@ -133,7 +135,7 @@
                 />
               </div>
               <div v-else>
-                <v-card variant="outlined">
+                <v-card variant="outlined" rounded="xl">
                   <v-card-title class="text-subtitle-1">
                     Participantes actuales ({{ participants.length }})
                   </v-card-title>
@@ -184,7 +186,7 @@
             @click="saveTournament"
           >
             <v-icon start>mdi-content-save</v-icon>
-            Guardar cambios
+            Guardar
           </v-btn>
         </v-col>
       </v-row>

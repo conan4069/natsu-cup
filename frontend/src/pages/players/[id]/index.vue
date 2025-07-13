@@ -52,7 +52,7 @@
       <v-row>
         <!-- Player info card -->
         <v-col cols="12" md="6">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-account-details</v-icon>
               Información del Jugador
@@ -93,7 +93,7 @@
 
         <!-- Statistics card -->
         <v-col cols="12" md="6">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-chart-line</v-icon>
               Estadísticas
@@ -149,7 +149,7 @@
       <!-- Recent tournaments -->
       <v-row class="mt-6">
         <v-col cols="12">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-trophy</v-icon>
               Torneos Recientes

@@ -3,7 +3,7 @@
     <v-row>
       <!-- Estadísticas generales -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-chart-line</v-icon>
             Estadísticas Generales
@@ -45,7 +45,7 @@
 
       <!-- Estadísticas de goles -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-soccer</v-icon>
             Estadísticas de Goles
@@ -73,7 +73,7 @@
 
       <!-- Top equipos -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-trophy</v-icon>
             Top Equipos
@@ -124,7 +124,7 @@
 
       <!-- Estadísticas por fase -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-chart-bar</v-icon>
             Estadísticas por Fase
@@ -174,7 +174,7 @@
 
       <!-- Gráficos y visualizaciones -->
       <v-col cols="12">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-chart-pie</v-icon>
             Distribución de Resultados
@@ -212,13 +212,13 @@
 
       <!-- Acciones -->
       <v-col cols="12">
-        <v-card variant="outlined">
+        <v-card variant="outlined" rounded="xl" >
           <v-card-title class="text-h6">
             <v-icon start>mdi-lightning-bolt</v-icon>
             Acciones
           </v-card-title>
           <v-card-text>
-            <div class="d-flex flex-wrap gap-3">
+            <div class="d-flex flex-wrap align-center" style="gap: 5px;">
               <v-btn
                 color="primary"
                 prepend-icon="mdi-chart-bar"
@@ -229,10 +229,10 @@
                 Ver Estadísticas Completas
               </v-btn>
               <v-btn
-                color="secondary"
+                color="blue-darken-2"
                 prepend-icon="mdi-download"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="exportStats"
               >
                 Exportar Estadísticas

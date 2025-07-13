@@ -3,7 +3,7 @@
     <v-row>
       <!-- Información general del torneo -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-information</v-icon>
             Información General
@@ -43,7 +43,7 @@
 
       <!-- Estadísticas rápidas -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-chart-line</v-icon>
             Estadísticas Rápidas
@@ -81,7 +81,7 @@
 
       <!-- Configuración específica según tipo de torneo -->
       <v-col cols="12">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-cog</v-icon>
             Configuración del Torneo
@@ -160,19 +160,19 @@
 
       <!-- Acciones rápidas -->
       <v-col cols="12">
-        <v-card variant="outlined">
+        <v-card variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-lightning-bolt</v-icon>
             Acciones Rápidas
           </v-card-title>
           <v-card-text>
-            <div class="d-flex flex-wrap gap-3">
+            <div class="d-flex flex-wrap align-center" style="gap: 5px;">
               <!-- Editar torneo -->
               <v-btn
                 color="primary"
                 prepend-icon="mdi-pencil"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="editTournament"
               >
                 Editar Torneo
@@ -196,7 +196,7 @@
                 color="success"
                 prepend-icon="mdi-calendar"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="goToLeague"
               >
                 Generar Partidos
@@ -208,7 +208,7 @@
                 color="warning"
                 prepend-icon="mdi-trophy"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="goToBracket"
               >
                 Ver Eliminatoria
@@ -219,7 +219,7 @@
                 color="info"
                 prepend-icon="mdi-chart-bar"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="goToStats"
               >
                 Ver Estadísticas

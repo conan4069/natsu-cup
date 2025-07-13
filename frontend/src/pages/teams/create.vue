@@ -8,12 +8,13 @@
             class="mr-4"
             icon="mdi-arrow-left"
             variant="text"
+            color="white"
             @click="goBack"
           />
           <div>
             <h1 class="text-h4 font-weight-bold mb-2 page-title">Nuevo Equipo</h1>
             <p class="text-body-1 page-subtitle">
-              Crea un nuevo equipo para la Natsu Cup
+              Crea un nuevo equipo para el campeonato
             </p>
           </div>
         </div>
@@ -23,7 +24,7 @@
     <!-- Formulario -->
     <v-row justify="center">
       <v-col cols="12" lg="6" md="8">
-        <v-card>
+        <v-card rounded="xl">
           <v-card-title class="text-h6 pa-6 pb-0">
             Información del Equipo
           </v-card-title>

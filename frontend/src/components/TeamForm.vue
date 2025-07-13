@@ -38,7 +38,7 @@
 
     <div v-if="logoPreview" class="mb-4" style="display: flex; flex-direction: column; align-items: center;">
       <p class="text-body-2 text-grey-darken-1 mb-2" style="text-align: center;">Logo actual</p>
-      <v-avatar size="80">
+      <v-avatar size="140">
         <v-img alt="Preview del logo" :src="logoPreview" />
       </v-avatar>
     </div>

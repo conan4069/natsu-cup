@@ -3,7 +3,7 @@
     <v-row>
       <!-- Estado de la liga -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-chart-line</v-icon>
             Estado de la Liga
@@ -53,7 +53,7 @@
 
       <!-- Clasificación actual -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-trophy</v-icon>
             Clasificación Actual
@@ -114,7 +114,7 @@
 
       <!-- Próximos partidos -->
       <v-col cols="12">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-calendar-clock</v-icon>
             Próximos Partidos
@@ -169,13 +169,13 @@
 
       <!-- Acciones -->
       <v-col cols="12">
-        <v-card variant="outlined">
+        <v-card variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-lightning-bolt</v-icon>
             Acciones
           </v-card-title>
           <v-card-text>
-            <div class="d-flex flex-wrap gap-3">
+            <div class="d-flex flex-wrap align-center" style="gap: 5px;">
               <v-btn
                 color="primary"
                 prepend-icon="mdi-chart-line"
@@ -190,7 +190,7 @@
                 color="success"
                 prepend-icon="mdi-play"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="startLeague"
               >
                 Generar Partidos
@@ -200,7 +200,7 @@
                 color="warning"
                 prepend-icon="mdi-trophy"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="generatePlayoffs"
               >
                 Generar Playoffs

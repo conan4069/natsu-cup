@@ -23,10 +23,11 @@
               class="mr-4"
               icon="mdi-arrow-left"
               variant="text"
+              color="white"
               @click="goBack"
             />
             <div>
-              <h1 class="text-h4 font-weight-bold mb-2">{{ tournament.name }}</h1>
+              <h1 class="text-h4 font-weight-bold mb-2 text-white">{{ tournament.name }}</h1>
               <p class="text-body-1 text-grey-darken-1">
                 Estadísticas del Torneo
               </p>
@@ -38,7 +39,7 @@
       <!-- Statistics overview -->
       <v-row class="mb-6">
         <v-col cols="12" md="3" sm="6">
-          <v-card class="stat-card">
+          <v-card class="stat-card" rounded="xl">
             <v-card-text class="text-center">
               <v-icon class="mb-3" color="primary" size="48">mdi-account-group</v-icon>
               <div class="text-h4 font-weight-bold text-primary mb-2">
@@ -52,7 +53,7 @@
         </v-col>
 
         <v-col cols="12" md="3" sm="6">
-          <v-card class="stat-card">
+          <v-card class="stat-card" rounded="xl">
             <v-card-text class="text-center">
               <v-icon class="mb-3" color="success" size="48">mdi-soccer</v-icon>
               <div class="text-h4 font-weight-bold text-success mb-2">
@@ -66,7 +67,7 @@
         </v-col>
 
         <v-col cols="12" md="3" sm="6">
-          <v-card class="stat-card">
+          <v-card class="stat-card" rounded="xl">
             <v-card-text class="text-center">
               <v-icon class="mb-3" color="warning" size="48">mdi-trophy</v-icon>
               <div class="text-h4 font-weight-bold text-warning mb-2">
@@ -80,7 +81,7 @@
         </v-col>
 
         <v-col cols="12" md="3" sm="6">
-          <v-card class="stat-card">
+          <v-card class="stat-card" rounded="xl">
             <v-card-text class="text-center">
               <v-icon class="mb-3" color="info" size="48">mdi-chart-line</v-icon>
               <div class="text-h4 font-weight-bold text-info mb-2">
@@ -97,7 +98,7 @@
       <!-- Team standings -->
       <v-row>
         <v-col cols="12">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-trophy</v-icon>
               Clasificación del Torneo

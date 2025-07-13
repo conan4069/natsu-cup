@@ -25,19 +25,23 @@
 
   <!-- Contenido principal -->
   <v-main>
-    <v-parallax src="@/assets/fondocesped.jpg">
+    <template v-if="!isHome">
+      <v-parallax class="champions-parallax" src="@/assets/Champions.jpg">
+        <v-container class="pa-0" fluid>
+          <router-view />
+        </v-container>
+      </v-parallax>
+    </template>
+    <template v-else>
       <v-container class="pa-0" fluid>
-        <!-- Slot para el contenido de las rutas -->
         <router-view />
       </v-container>
-    </v-parallax>
-
-    <!-- Footer (opcional) -->
+    </template>
   </v-main>
-  <v-footer class="py-1" color="#f3f2e5">
+  <v-footer class="py-1" color="white">
     <v-row align="center" justify="center">
       <v-col class="text-center" cols="12">
-        <span class="text-caption text-grey-darken-3">
+        <span class="text-caption text-black">
           © 2025 Natsu Cup. Todos los derechos reservados.
         </span>
       </v-col>
@@ -46,6 +50,7 @@
 </template>
 
 <script setup>
+  import { computed, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { useDisplay } from 'vuetify'
   import LogoCup from '@/assets/LogoCup.png'
@@ -57,6 +62,7 @@
   const fullScreenRoutes = new Set(['/'])
 
   const isFullScreenRoute = computed(() => fullScreenRoutes.has(route.path))
+  const isHome = computed(() => route.path === '/')
 
   watch(
     mobile,
@@ -66,3 +72,18 @@
     { immediate: true },
   )
 </script>
+
+<style>
+
+ .champions-parallax .v-img__img,
+ .champions-parallax .v-parallax__image {
+   filter: brightness(0.55) blur(1.5px) saturate(1.15) !important;
+   transition: filter 0.3s;
+ }
+
+/* Evitar que los avatares se vean difuminados o pixelados */
+.v-avatar .v-img__img,
+.v-avatar img {
+  filter: none !important;
+}
+</style>

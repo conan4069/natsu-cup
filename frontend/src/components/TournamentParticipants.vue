@@ -15,7 +15,7 @@
     </v-row>
 
     <!-- Jugadores disponibles -->
-    <v-card class="mb-6" variant="outlined">
+    <v-card class="mb-6" variant="outlined" rounded="xl">
       <v-card-title class="text-subtitle-1">
         Jugadores disponibles ({{ filteredAvailablePlayers.length }})
       </v-card-title>
@@ -44,7 +44,7 @@
     </v-card>
 
     <!-- Participantes seleccionados -->
-    <v-card variant="outlined">
+    <v-card variant="outlined" rounded="xl">
       <v-card-title class="text-subtitle-1">
         Participantes seleccionados ({{ participants.length }})
       </v-card-title>

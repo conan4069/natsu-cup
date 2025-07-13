@@ -27,8 +27,8 @@
               @click="goBack"
             />
             <div>
-              <h1 class="text-h4 font-weight-bold mb-2 page-title">Editar Jugador</h1>
-              <p class="text-body-1 page-subtitle">
+              <h1 class="text-h4 text-white mb-2 page-title">Editar Jugador</h1>
+              <p class="text-body-1 text-white page-subtitle">
                 Modifica la información de {{ player.display_name }}
               </p>
             </div>
@@ -38,8 +38,8 @@
 
       <!-- Formulario -->
       <v-row justify="center">
-        <v-col cols="12" lg="6" md="8">
-          <v-card>
+        <v-col cols="12" lg="6" md="8" >
+          <v-card rounded="xl">
             <v-card-title class="text-h6 pa-6 pb-0">
               <v-icon start>mdi-account-edit</v-icon>
               Información del Jugador
@@ -55,7 +55,7 @@
             <v-card-actions class="pa-6 pt-0">
               <v-spacer />
               <v-btn
-                color="grey"
+                color="black"
                 rounded="xl"
                 variant="outlined"
                 @click="goBack"
@@ -71,7 +71,7 @@
                 variant="elevated"
                 @click="savePlayer"
               >
-                Guardar Cambios
+                Guardar
               </v-btn>
             </v-card-actions>
           </v-card>

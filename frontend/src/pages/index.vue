@@ -1,5 +1,5 @@
 <template>
-  <v-parallax src="@/assets/fondo2.jpg">
+  <v-parallax class="champions-parallax" src="@/assets/fondo2.jpg">
     <v-container fluid>
 
       <!-- Header -->
@@ -13,8 +13,8 @@
               src="@/assets/LogoCup.png"
             />
             <h1 class="text-h3 font-weight-bold mb-2 page-title">Natsu Cup</h1>
-            <p class="text-h6 page-subtitle">
-              Sistema de Gestión de Torneos de Fútbol
+            <p class="text-h6 text-black">
+              Tú Liga de FIFA de confianza
             </p>
           </div>
         </v-col>
@@ -30,7 +30,7 @@
         <!-- Statistics cards -->
         <v-row class="mt-6">
           <v-col cols="12" md="3" sm="6">
-            <v-card class="stat-card">
+            <v-card class="stat-card" rounded="xl">
               <v-card-text class="text-center">
                 <v-icon class="mb-3" color="primary" size="48">mdi-trophy</v-icon>
                 <div class="text-h4 font-weight-bold text-primary mb-2">
@@ -44,7 +44,7 @@
           </v-col>
 
           <v-col cols="12" md="3" sm="6">
-            <v-card class="stat-card">
+            <v-card class="stat-card" rounded="xl">
               <v-card-text class="text-center">
                 <v-icon class="mb-3" color="success" size="48">mdi-account-group</v-icon>
                 <div class="text-h4 font-weight-bold text-success mb-2">
@@ -58,7 +58,7 @@
           </v-col>
 
           <v-col cols="12" md="3" sm="6">
-            <v-card class="stat-card">
+            <v-card class="stat-card" rounded="xl">
               <v-card-text class="text-center">
                 <v-icon class="mb-3" color="warning" size="48">mdi-shield</v-icon>
                 <div class="text-h4 font-weight-bold text-warning mb-2">
@@ -72,7 +72,7 @@
           </v-col>
 
           <v-col cols="12" md="3" sm="6">
-            <v-card class="stat-card">
+            <v-card class="stat-card" rounded="xl">
               <v-card-text class="text-center">
                 <v-icon class="mb-3" color="info" size="48">mdi-soccer</v-icon>
                 <div class="text-h4 font-weight-bold text-info mb-2">
@@ -90,7 +90,7 @@
         <v-row>
           <!-- Recent tournaments -->
           <v-col cols="12" md="8">
-            <v-card>
+            <v-card rounded="xl">
               <v-card-title class="text-h6">
                 <v-icon start>mdi-trophy</v-icon>
                 Torneos Recientes
@@ -144,13 +144,13 @@
 
           <!-- Quick actions -->
           <v-col cols="12" md="4">
-            <v-card>
+            <v-card rounded="xl">
               <v-card-title class="text-h6">
                 <v-icon start>mdi-lightning-bolt</v-icon>
-                Acciones Rápidas
+                Atajos Rápidos
               </v-card-title>
               <v-card-text>
-                <div class="d-flex flex-column gap-3">
+                <div class="d-flex flex-column" style="gap: 5px;">
                   <v-btn
                     block
                     color="primary"
@@ -167,7 +167,7 @@
                     color="success"
                     prepend-icon="mdi-account-plus"
                     rounded="xl"
-                    variant="outlined"
+                    variant="elevated"
                     @click="createPlayer"
                   >
                     Agregar Jugador
@@ -178,7 +178,7 @@
                     color="warning"
                     prepend-icon="mdi-shield-plus"
                     rounded="xl"
-                    variant="outlined"
+                    variant="elevated"
                     @click="createTeam"
                   >
                     Crear Equipo
@@ -189,7 +189,7 @@
                     color="info"
                     prepend-icon="mdi-chart-line"
                     rounded="xl"
-                    variant="outlined"
+                    variant="elevated"
                     @click="viewStats"
                   >
                     Ver Estadísticas
@@ -204,7 +204,7 @@
         <v-row>
           <!-- Top players -->
           <v-col cols="12" md="6">
-            <v-card>
+            <v-card rounded="xl">
               <v-card-title class="text-h6">
                 <v-icon start>mdi-account-star</v-icon>
                 Mejores Jugadores
@@ -256,7 +256,7 @@
 
           <!-- Top teams -->
           <v-col cols="12" md="6">
-            <v-card>
+            <v-card rounded="xl">
               <v-card-title class="text-h6">
                 <v-icon start>mdi-shield-star</v-icon>
                 Mejores Equipos
@@ -426,5 +426,13 @@
 
 .stat-card:hover {
   transform: translateY(-2px);
+}
+</style>
+
+<style>
+.champions-parallax .v-img__img,
+.champions-parallax .v-parallax__image {
+  filter: brightness(0.55) blur(1.5px) saturate(1.15) !important;
+  transition: filter 0.3s;
 }
 </style>

@@ -3,7 +3,7 @@
     <v-row>
       <!-- Estado de los grupos -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-account-group</v-icon>
             Estado de los Grupos
@@ -53,7 +53,7 @@
 
       <!-- Equipos clasificados -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-trophy</v-icon>
             Equipos Clasificados
@@ -117,7 +117,7 @@
 
       <!-- Resumen de grupos -->
       <v-col cols="12">
-        <v-card class="mb-4" variant="outlined">
+        <v-card class="mb-4" variant="outlined" rounded="xl">
           <v-card-title class="text-h6">
             <v-icon start>mdi-view-grid</v-icon>
             Resumen de Grupos
@@ -171,13 +171,13 @@
 
       <!-- Acciones -->
       <v-col cols="12">
-        <v-card variant="outlined">
+        <v-card variant="outlined" rounded="xl" >
           <v-card-title class="text-h6">
             <v-icon start>mdi-lightning-bolt</v-icon>
             Acciones
           </v-card-title>
           <v-card-text>
-            <div class="d-flex flex-wrap gap-3">
+            <div class="d-flex flex-wrap align-center" style="gap: 5px;">
               <v-btn
                 color="primary"
                 prepend-icon="mdi-account-group"
@@ -192,7 +192,7 @@
                 color="success"
                 prepend-icon="mdi-play"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="generateGroups"
               >
                 Generar Grupos
@@ -202,7 +202,7 @@
                 color="warning"
                 prepend-icon="mdi-trophy"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="generateKnockout"
               >
                 Generar Eliminatoria

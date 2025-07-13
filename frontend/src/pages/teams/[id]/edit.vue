@@ -23,6 +23,7 @@
               class="mr-4"
               icon="mdi-arrow-left"
               variant="text"
+              color="white"
               @click="goBack"
             />
             <div>
@@ -38,7 +39,7 @@
       <!-- Formulario -->
       <v-row justify="center">
         <v-col cols="12" lg="6" md="8">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6 pa-6 pb-0">
               <v-icon start>mdi-shield-edit</v-icon>
               Información del Equipo
@@ -72,7 +73,7 @@
                 variant="elevated"
                 @click="saveTeam"
               >
-                Guardar Cambios
+                Guardar
               </v-btn>
             </v-card-actions>
           </v-card>

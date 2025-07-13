@@ -39,7 +39,7 @@
               <div>
                 <h1 class="text-h4 font-weight-bold mb-2">{{ player.display_name }}</h1>
                 <p class="text-body-1 text-grey-darken-1">
-                  Jugador del campeonato Natsu Cup
+                  Jugador
                 </p>
               </div>
             </div>
@@ -48,10 +48,10 @@
       </v-row>
 
       <!-- Content -->
-      <v-row>
+      <v-row >
         <!-- Player info card -->
         <v-col cols="12" md="6">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-account-details</v-icon>
               Información del Jugador
@@ -79,7 +79,7 @@
 
         <!-- Statistics card -->
         <v-col cols="12" md="6">
-          <v-card>
+          <v-card rounded="xl">
             <v-card-title class="text-h6">
               <v-icon start>mdi-chart-line</v-icon>
               Estadísticas

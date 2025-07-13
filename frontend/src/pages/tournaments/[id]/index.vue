@@ -23,29 +23,30 @@
               class="mr-4"
               icon="mdi-arrow-left"
               variant="text"
+              color="white"
               @click="goBack"
             />
             <div class="flex-grow-1">
               <h1 class="text-h4 font-weight-bold mb-2 page-title">{{ tournament.name }}</h1>
               <p class="text-body-1 page-subtitle">
-                {{ tournament.description || 'Torneo de fútbol' }}
+                {{ tournament.description || 'Torneo de FIFA' }}
               </p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex justify-center" style="gap: 10px;">
               <v-btn
-                color="primary"
+                color="blue-darken-2"
                 prepend-icon="mdi-pencil"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="editTournament"
               >
                 Editar
               </v-btn>
               <v-btn
-                color="error"
+                color="red-darken-2"
                 prepend-icon="mdi-delete"
                 rounded="xl"
-                variant="outlined"
+                variant="elevated"
                 @click="deleteTournament"
               >
                 Eliminar
