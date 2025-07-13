@@ -127,7 +127,7 @@
           label="Reglas del torneo (opcional)"
           placeholder="Describe las reglas específicas del torneo..."
           prepend-inner-icon="mdi-file-document"
-          :readonly="readonly || mode === 'view'"
+          :readonly="mode === 'view'"
           rounded="xl"
           rows="4"
           variant="outlined"

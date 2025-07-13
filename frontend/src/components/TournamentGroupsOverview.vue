@@ -3,7 +3,7 @@
     <v-row>
       <!-- Estado de los grupos -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-account-group</v-icon>
             Estado de los Grupos
@@ -53,23 +53,29 @@
 
       <!-- Equipos clasificados -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-trophy</v-icon>
             Equipos Clasificados
           </v-card-title>
           <v-card-text>
-            <div v-if="qualifiedTeams.length === 0" class="text-center py-4">
+            <div v-if="loading" class="text-center py-4">
+              <v-progress-circular color="primary" indeterminate size="32" />
+              <p class="text-body-2 text-grey-darken-1 mt-2">
+                Cargando equipos clasificados...
+              </p>
+            </div>
+            <div v-else-if="allQualifiedTeams.length === 0" class="text-center py-4">
               <v-icon class="mb-2" color="grey-lighten-1" size="32">
                 mdi-trophy-outline
               </v-icon>
               <p class="text-body-2 text-grey-darken-1">
-                No hay equipos clasificados aún
+                {{ groupsStatus === 'completed' ? 'No hay equipos clasificados aún' : 'Los grupos aún no están completados' }}
               </p>
             </div>
             <div v-else>
               <div
-                v-for="team in qualifiedTeams.slice(0, 6)"
+                v-for="team in allQualifiedTeams.slice(0, 6)"
                 :key="team.team_entry.id"
                 class="mb-2"
               >
@@ -77,8 +83,8 @@
                   <div class="d-flex align-center">
                     <v-avatar class="mr-2" size="24">
                       <v-img
-                        v-if="team.team_entry.assigned_team?.logo"
-                        :src="team.team_entry.assigned_team.logo"
+                        v-if="team.team_entry.assigned_team?.logo_url && team.team_entry.assigned_team.logo_url !== 'null'"
+                        :src="team.team_entry.assigned_team.logo_url"
                       />
                       <v-icon v-else size="small">mdi-shield</v-icon>
                     </v-avatar>
@@ -100,14 +106,14 @@
                   </v-chip>
                 </div>
               </div>
-              <div v-if="qualifiedTeams.length > 6" class="text-center mt-2">
+              <div v-if="allQualifiedTeams.length > 6" class="text-center mt-2">
                 <v-btn
                   color="primary"
                   size="small"
                   variant="text"
                   @click="goToGroups"
                 >
-                  Ver todos los clasificados
+                  Ver todos los clasificados ({{ qualifiedTeams.total_qualified || allQualifiedTeams.length > 0 ? allQualifiedTeams.length : 0 }})
                 </v-btn>
               </div>
             </div>
@@ -117,18 +123,24 @@
 
       <!-- Resumen de grupos -->
       <v-col cols="12">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-view-grid</v-icon>
             Resumen de Grupos
           </v-card-title>
           <v-card-text>
-            <div v-if="groupsSummary.length === 0" class="text-center py-4">
+            <div v-if="loading" class="text-center py-4">
+              <v-progress-circular color="primary" indeterminate size="32" />
+              <p class="text-body-2 text-grey-darken-1 mt-2">
+                Cargando resumen de grupos...
+              </p>
+            </div>
+            <div v-else-if="groupsSummary.length === 0" class="text-center py-4">
               <v-icon class="mb-2" color="grey-lighten-1" size="32">
                 mdi-account-group-outline
               </v-icon>
               <p class="text-body-2 text-grey-darken-1">
-                No hay grupos generados
+                {{ groupsStatus === 'not_started' ? 'No hay grupos generados' : 'No hay datos de grupos disponibles' }}
               </p>
             </div>
             <div v-else>
@@ -171,7 +183,7 @@
 
       <!-- Acciones -->
       <v-col cols="12">
-        <v-card variant="outlined" rounded="xl" >
+        <v-card rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-lightning-bolt</v-icon>
             Acciones
@@ -232,7 +244,12 @@
 
   // Estado reactivo
   const matches = ref([])
-  const qualifiedTeams = ref([])
+  const qualifiedTeams = ref({
+    group_winners: [],
+    group_runners_up: [],
+    best_third_place: [],
+    total_qualified: 0,
+  })
   const groupsSummary = ref([])
   const loading = ref(true)
 
@@ -241,14 +258,14 @@
     if (matches.value.length === 0) return 'not_started'
     const groupMatches = matches.value.filter(match => match.stage === 'group')
     const playedMatches = groupMatches.filter(match => match.played)
-    if (playedMatches.length === groupMatches.length) return 'completed'
+    if (playedMatches.length === groupMatches.length && groupMatches.length > 0) return 'completed'
     if (playedMatches.length > 0) return 'in_progress'
     return 'not_started'
   })
 
   const groupsCount = computed(() => {
     const groupMatches = matches.value.filter(match => match.stage === 'group')
-    const groupCodes = new Set(groupMatches.map(match => match.group_code))
+    const groupCodes = new Set(groupMatches.map(match => match.group_code).filter(Boolean))
     return groupCodes.size
   })
 
@@ -267,6 +284,15 @@
     return Math.round((playedMatches.value / totalMatches.value) * 100)
   })
 
+  // Combinar todos los equipos clasificados en un solo array
+  const allQualifiedTeams = computed(() => {
+    return [
+      ...qualifiedTeams.value.group_winners,
+      ...qualifiedTeams.value.group_runners_up,
+      ...qualifiedTeams.value.best_third_place,
+    ]
+  })
+
   // Métodos
   const loadData = async () => {
     loading.value = true
@@ -275,12 +301,32 @@
       const matchesResponse = await tournamentAPI.getTournamentMatches(props.tournament.id)
       matches.value = matchesResponse.data?.matches || matchesResponse.data || []
 
-      // Cargar equipos clasificados
-      try {
-        const qualifiedResponse = await tournamentAPI.getQualifiedTeams(props.tournament.id)
-        qualifiedTeams.value = qualifiedResponse.data || []
-      } catch {
-        qualifiedTeams.value = []
+      // Cargar equipos clasificados solo si los grupos están completados
+      if (groupsStatus.value === 'completed') {
+        try {
+          const qualifiedResponse = await tournamentAPI.getQualifiedTeams(props.tournament.id)
+          qualifiedTeams.value = qualifiedResponse.data || {
+            group_winners: [],
+            group_runners_up: [],
+            best_third_place: [],
+            total_qualified: 0,
+          }
+        } catch (error) {
+          console.error('Error al cargar equipos clasificados:', error)
+          qualifiedTeams.value = {
+            group_winners: [],
+            group_runners_up: [],
+            best_third_place: [],
+            total_qualified: 0,
+          }
+        }
+      } else {
+        qualifiedTeams.value = {
+          group_winners: [],
+          group_runners_up: [],
+          best_third_place: [],
+          total_qualified: 0,
+        }
       }
 
       // Generar resumen de grupos
@@ -288,7 +334,12 @@
     } catch (error) {
       console.error('Error al cargar datos de grupos:', error)
       matches.value = []
-      qualifiedTeams.value = []
+      qualifiedTeams.value = {
+        group_winners: [],
+        group_runners_up: [],
+        best_third_place: [],
+        total_qualified: 0,
+      }
       groupsSummary.value = []
     } finally {
       loading.value = false
@@ -301,6 +352,8 @@
 
     for (const match of groupMatches) {
       const groupCode = match.group_code
+      if (!groupCode) continue
+
       if (!groupMap[groupCode]) {
         groupMap[groupCode] = {
           code: groupCode,
@@ -316,11 +369,20 @@
       if (match.played) {
         groupMap[groupCode].matches_played++
       }
+
+      // Contar equipos únicos
+      if (match.participants && Array.isArray(match.participants)) {
+        const teamIds = new Set()
+        for (const participant of match.participants) {
+          teamIds.add(participant.id)
+        }
+        groupMap[groupCode].teams_count = Math.max(groupMap[groupCode].teams_count, teamIds.size)
+      }
     }
 
     // Determinar si el grupo está completado
     for (const group of Object.values(groupMap)) {
-      group.completed = group.matches_played === group.total_matches
+      group.completed = group.matches_played === group.total_matches && group.total_matches > 0
     }
 
     groupsSummary.value = Object.values(groupMap)

@@ -42,7 +42,7 @@
               <div class="d-flex align-center">
                 <v-avatar class="mr-2" size="24">
                   <v-img
-                    v-if="team.assigned_team?.logo"
+                    v-if="team.assigned_team?.logo && team.assigned_team.logo !== 'null'"
                     alt="Logo"
                     :src="team.assigned_team.logo"
                   />

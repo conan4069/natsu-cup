@@ -34,11 +34,11 @@
     loading.value = true
 
     try {
-      const response = await tournamentAPI.completeKnockoutStage(
+      // Usar la función unificada knockoutStage
+      const response = await tournamentAPI.knockoutStage(
         props.tournamentId,
         {
-          total_slots: 8,
-          next_stage: 'quarterfinal',
+          stage: 'quarterfinal',
         },
       )
 

@@ -2,23 +2,14 @@ from rest_framework import generics, views
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import (
-    Tournament, Player, GameTeam, TeamEntry, Match, GroupStanding, TournamentStanding
+    Tournament, Player, GameTeam, TeamEntry, Match, TournamentStanding, GroupStanding
 )
 from .serializers import (
     TournamentSerializer, PlayerSerializer,
     GameTeamSerializer, TeamEntrySerializer,
-    MatchSerializer, GroupStandingSerializer, TournamentStandingSerializer
+    MatchSerializer
 )
-from .brackets import (
-    generate_group_matches,
-    generate_knockout_bracket,
-    generate_playoffs_for_missing_slots,
-    get_qualified_teams_for_knockout
-)
-from .utils import (
-    update_player_stats, update_team_stats, update_tournament_status,
-    generate_league_matches, update_tournament_standings, update_group_standings
-)
+from .brackets import generate_group_matches, get_qualified_teams_for_knockout
 
 import random
 
@@ -26,21 +17,30 @@ import random
 class TournamentListCreateView(generics.ListCreateAPIView):
     queryset = Tournament.objects.all()
     serializer_class = TournamentSerializer
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 class TournamentDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Tournament.objects.all()
     serializer_class = TournamentSerializer
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 class TeamEntryListCreateView(generics.ListCreateAPIView):
     serializer_class = TeamEntrySerializer
-
+    
     def get_queryset(self):
         tournament_id = self.kwargs.get('tournament_id')
         return TeamEntry.objects.filter(tournament_id=tournament_id)
-
+    
     def perform_create(self, serializer):
         tournament_id = self.kwargs.get('tournament_id')
         serializer.save(tournament_id=tournament_id)
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 # ⚔️ Generación de fase de grupos
 class GenerateGroupMatchesView(views.APIView):
@@ -89,14 +89,14 @@ class GenerateGroupMatchesView(views.APIView):
                         {
                             'id': player.id,
                             'display_name': player.display_name,
-                            'avatar': player.avatar.url if player.avatar else None
+                            'avatar': request.build_absolute_uri(player.avatar.url) if player.avatar else None
                         }
                         for player in entry.players.all()
                     ],
                     'assigned_team': {
                         'id': entry.assigned_team.id,
                         'name': entry.assigned_team.name,
-                        'logo': entry.assigned_team.logo.url if entry.assigned_team.logo else None
+                        'logo': request.build_absolute_uri(entry.assigned_team.logo.url) if entry.assigned_team.logo else None
                     } if entry.assigned_team else None,
                     'team_name': str(entry)
                 }
@@ -110,14 +110,23 @@ class GenerateGroupMatchesView(views.APIView):
 class PlayerListView(generics.ListAPIView):
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 class PlayerCreateView(generics.CreateAPIView):
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 class PlayerDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 class PlayerStatsView(views.APIView):
     def get(self, request, player_id):
@@ -126,8 +135,8 @@ class PlayerStatsView(views.APIView):
         except Player.DoesNotExist:
             return Response({'error': 'Player not found'}, status=404)
         
-        # Obtener todas las entradas del jugador
-        team_entries = TeamEntry.objects.filter(players=player)
+        # Obtener todas las entradas del jugador (solo las que realmente participan)
+        team_entries = TeamEntry.objects.filter(players=player).distinct()
         
         # Estadísticas básicas
         total_tournaments = team_entries.count()
@@ -138,12 +147,17 @@ class PlayerStatsView(views.APIView):
         
         # Calcular estadísticas de partidos
         for entry in team_entries:
-            matches = Match.objects.filter(participants=entry, played=True)
+            # Solo partidos donde este TeamEntry específico participa
+            matches = Match.objects.filter(
+                participants=entry,
+                played=True
+            ).distinct()
+            
             total_matches += matches.count()
             
             for match in matches:
                 goals = match.goals
-                if goals:
+                if goals and str(entry.id) in goals:
                     # Obtener goles del equipo del jugador
                     entry_goals = goals.get(str(entry.id), 0)
                     other_goals = sum(g for k, g in goals.items() if k != str(entry.id))
@@ -171,7 +185,7 @@ class PlayerStatsView(views.APIView):
             'win_rate': round(win_rate, 1),
             'loss_rate': round(loss_rate, 1),
             'draw_rate': round(draw_rate, 1),
-            'total_points': wins * 3 + draws,  # Sistema de puntos: 3 por victoria, 1 por empate
+            'total_points': wins * 3 + draws,
         }
         
         return Response(stats)
@@ -184,17 +198,19 @@ class PlayerTournamentsView(views.APIView):
             return Response({'error': 'Player not found'}, status=404)
         
         # Obtener todas las entradas del jugador con información del torneo
-        team_entries = TeamEntry.objects.filter(players=player).select_related('tournament', 'assigned_team')
+        team_entries = TeamEntry.objects.filter(
+            players=player
+        ).select_related('tournament', 'assigned_team').distinct()
         
         tournaments = []
         for entry in team_entries:
             tournament = entry.tournament
             
-            # Obtener estadísticas del jugador en este torneo
+            # Obtener estadísticas del jugador en este torneo específico
             tournament_matches = Match.objects.filter(
                 participants=entry,
                 played=True
-            )
+            ).distinct()
             
             tournament_wins = 0
             tournament_losses = 0
@@ -202,7 +218,7 @@ class PlayerTournamentsView(views.APIView):
             
             for match in tournament_matches:
                 goals = match.goals
-                if goals:
+                if goals and str(entry.id) in goals:
                     entry_goals = goals.get(str(entry.id), 0)
                     other_goals = sum(g for k, g in goals.items() if k != str(entry.id))
                     
@@ -213,7 +229,7 @@ class PlayerTournamentsView(views.APIView):
                     else:
                         tournament_draws += 1
             
-            # Calcular posición (simplificado)
+            # Calcular estadísticas
             total_matches = tournament_wins + tournament_losses + tournament_draws
             points = tournament_wins * 3 + tournament_draws
             
@@ -246,10 +262,16 @@ class PlayerTournamentsView(views.APIView):
 class GameTeamListCreateView(generics.ListCreateAPIView):
     queryset = GameTeam.objects.all()
     serializer_class = GameTeamSerializer
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 class GameTeamDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GameTeam.objects.all()
     serializer_class = GameTeamSerializer
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 class GameTeamStatsView(views.APIView):
     def get(self, request, team_id):
@@ -373,14 +395,135 @@ class GameTeamTournamentsView(views.APIView):
             'total_tournaments': len(tournaments)
         })
 
-# Detalle y actualización de partido
-class MatchDetailView(generics.RetrieveUpdateAPIView):
-    queryset = Match.objects.all()
-    serializer_class = MatchSerializer
+class MatchView(APIView):
+    def get(self, request, match_id):
+        try:
+            match = Match.objects.get(pk=match_id)
+        except Match.DoesNotExist:
+            return Response({'error': 'Match not found'}, status=404)
+        
+        # Usar el serializer existente
+        serializer = MatchSerializer(match, context={'request': request})
+        return Response(serializer.data)
+    
+    def put(self, request, match_id):
+        try:
+            match = Match.objects.get(pk=match_id)
+        except Match.DoesNotExist:
+            return Response({'error': 'Match not found'}, status=404)
+        
+        # Actualizar partido completo
+        serializer = MatchSerializer(match, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+    
+    def patch(self, request, match_id):
+        try:
+            match = Match.objects.get(pk=match_id)
+        except Match.DoesNotExist:
+            return Response({'error': 'Match not found'}, status=404)
+        
+        try:
+            data = request.data
+            goals = data.get('goals', {})
+            
+            # Validar que hay goles
+            if not goals:
+                return Response({'error': 'Se requieren los goles de ambos equipos'}, status=400)
+            
+            # Actualizar partido
+            match.played = True
+            match.goals = goals
+            match.save()
+            
+            # Actualizar clasificación del torneo
+            self.update_tournament_standings(match.tournament)
+            
+            return Response({
+                'message': 'Resultado guardado exitosamente',
+                'match_id': match.id
+            })
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+    
+    def update_tournament_standings(self, tournament):
+        """Actualizar clasificación del torneo después de guardar un resultado"""
+        # Obtener todos los partidos jugados del torneo
+        matches = Match.objects.filter(tournament=tournament, played=True)
+        
+        # Calcular estadísticas por equipo
+        team_stats = {}
+        
+        for match in matches:
+            # Usar TeamEntry en lugar de Participant
+            team_entries = match.team_entries.all()
+            if len(team_entries) != 2:
+                continue
+                
+            team1 = team_entries[0].assigned_team
+            team2 = team_entries[1].assigned_team
+            
+            team1_goals = match.goals.get(str(team_entries[0].id), 0)
+            team2_goals = match.goals.get(str(team_entries[1].id), 0)
+            
+            # Actualizar estadísticas de equipo 1
+            if team1 not in team_stats:
+                team_stats[team1] = {'wins': 0, 'draws': 0, 'losses': 0, 'goals_for': 0, 'goals_against': 0}
+            
+            team_stats[team1]['goals_for'] += team1_goals
+            team_stats[team1]['goals_against'] += team2_goals
+            
+            if team1_goals > team2_goals:
+                team_stats[team1]['wins'] += 1
+            elif team1_goals == team2_goals:
+                team_stats[team1]['draws'] += 1
+            else:
+                team_stats[team1]['losses'] += 1
+            
+            # Actualizar estadísticas de equipo 2
+            if team2 not in team_stats:
+                team_stats[team2] = {'wins': 0, 'draws': 0, 'losses': 0, 'goals_for': 0, 'goals_against': 0}
+            
+            team_stats[team2]['goals_for'] += team2_goals
+            team_stats[team2]['goals_against'] += team1_goals
+            
+            if team2_goals > team1_goals:
+                team_stats[team2]['wins'] += 1
+            elif team2_goals == team1_goals:
+                team_stats[team2]['draws'] += 1
+            else:
+                team_stats[team2]['losses'] += 1
+        
+        # Actualizar o crear registros de clasificación
+        for team, stats in team_stats.items():
+            matches_played = stats['wins'] + stats['draws'] + stats['losses']
+            points = (stats['wins'] * 3) + stats['draws']
+            goal_difference = stats['goals_for'] - stats['goals_against']
+            
+            TournamentStanding.objects.update_or_create(
+                tournament=tournament,
+                team=team,
+                defaults={
+                    'matches_played': matches_played,
+                    'wins': stats['wins'],
+                    'draws': stats['draws'],
+                    'losses': stats['losses'],
+                    'goals_for': stats['goals_for'],
+                    'goals_against': stats['goals_against'],
+                    'goal_difference': goal_difference,
+                    'points': points
+                }
+            )
 
 class TeamEntryDeleteView(generics.DestroyAPIView):
   queryset = TeamEntry.objects.all()
   serializer_class = TeamEntrySerializer
+  
+  def get_serializer_context(self):
+    return {'request': self.request}
 
 class AssignRandomTeamsView(APIView):
   def post(self, request, tournament_id):
@@ -389,236 +532,138 @@ class AssignRandomTeamsView(APIView):
     except Tournament.DoesNotExist:
       return Response({'error': 'Tournament not found'}, status=404)
 
-    entries = TeamEntry.objects.filter(tournament=tournament, assigned_team__isnull=True)
+    # Obtener todas las entradas del torneo (no solo las sin equipo asignado)
+    entries = TeamEntry.objects.filter(tournament=tournament)
     available_teams = list(GameTeam.objects.all())
 
     if len(available_teams) < entries.count():
       return Response({'error': 'Not enough available teams'}, status=400)
 
+    # Mezclar equipos disponibles
     random.shuffle(available_teams)
+    
+    # Asignar equipos a todas las entradas
     for entry, team in zip(entries, available_teams):
       entry.assigned_team = team
       entry.save()
 
-    return Response({'message': f'{entries.count()} teams assigned randomly'}, status=200)
+    return Response({
+      'message': f'{entries.count()} teams assigned randomly',
+      'assigned_entries': entries.count()
+    }, status=200)
 
 class CompleteKnockoutStageView(APIView):
-  def post(self, request, tournament_id):
-    desired_total = request.data.get('total_slots')  # ej: 8
-    next_stage = request.data.get('next_stage')      # ej: 'quarterfinal'
-
-    if not desired_total or not next_stage:
-      return Response({'error': 'Both total_slots and next_stage are required'}, status=400)
-
-    try:
-      tournament = Tournament.objects.get(pk=tournament_id)
-    except Tournament.DoesNotExist:
-      return Response({'error': 'Tournament not found'}, status=404)
-
-    current_entries = TeamEntry.objects.filter(tournament=tournament)
-    entry_count = current_entries.count()
-
-    playoff_matches = []
-    try:
-      if entry_count < desired_total:
-        playoff_matches = generate_playoffs_for_missing_slots(
-          tournament=tournament,
-          desired_total=desired_total,
-          stage_name=next_stage
-        )
-    except ValueError as e:
-      return Response({'error': str(e)}, status=400)
-
-    # Combinar actuales + ganadores futuros
-    total_expected = entry_count + len(playoff_matches)
-    if total_expected != desired_total:
-      return Response({
-        'error': f'Incomplete bracket: total {total_expected}, expected {desired_total}'
-      }, status=400)
-
-    # Generar la fase principal (con slots vacíos si es necesario)
-    knockout = generate_knockout_bracket(
-      tournament,
-      list(current_entries),
-      stage=next_stage
-    )
-
-    return Response({
-      'message': f'Bracket for {next_stage} completed',
-      'playoffs_created': [m.id for m in playoff_matches],
-      'matches_created': [m.id for m in knockout] if knockout else []
-    }, status=201)
-
-class TournamentMatchesView(APIView):
-    def get(self, request, tournament_id):
+    def post(self, request, tournament_id):
         try:
             tournament = Tournament.objects.get(pk=tournament_id)
         except Tournament.DoesNotExist:
             return Response({'error': 'Tournament not found'}, status=404)
-
-        # Obtener todos los partidos del torneo con información completa
-        matches = Match.objects.filter(tournament=tournament).prefetch_related(
-            'participants', 
-            'participants__players', 
-            'participants__assigned_team'
+        
+        stage_data = request.data.get('stage', 'semifinal')
+        
+        # Manejar diferentes etapas
+        if stage_data == 'quarterfinal':
+            # Generar cuartos de final (primera etapa)
+            return self.generate_first_stage(tournament, 'quarterfinal')
+        elif stage_data == 'semifinal':
+            # Completar semifinales
+            return self.complete_next_stage(tournament, 'quarterfinal', 'semifinal')
+        elif stage_data == 'final':
+            # Completar final
+            return self.complete_next_stage(tournament, 'semifinal', 'final')
+        else:
+            return Response({'error': 'Invalid stage. Must be quarterfinal, semifinal, or final'}, status=400)
+    
+    def generate_first_stage(self, tournament, stage):
+        """Genera la primera etapa de eliminatorias"""
+        from .brackets import get_qualified_teams_for_knockout
+        
+        # Obtener equipos clasificados
+        qualified_teams_data = get_qualified_teams_for_knockout(tournament)
+        
+        # Combinar todos los equipos clasificados
+        all_qualified = []
+        all_qualified.extend([team['team_entry'] for team in qualified_teams_data['group_winners']])
+        all_qualified.extend([team['team_entry'] for team in qualified_teams_data['group_runners_up']])
+        all_qualified.extend([team['team_entry'] for team in qualified_teams_data['best_third_place']])
+        
+        if len(all_qualified) < 2:
+            return Response({'error': 'Not enough qualified teams'}, status=400)
+        
+        # Generar partidos de la primera etapa
+        from .brackets import generate_knockout_bracket
+        matches = generate_knockout_bracket(tournament, all_qualified, stage)
+        
+        return Response({
+            'message': f'{stage.capitalize()} stage generated with {len(all_qualified)} teams',
+            'winners_count': len(all_qualified),
+            'matches_created': len(matches),
+            'stage': stage,
+            'qualified_teams': len(all_qualified)
+        }, status=201)
+    
+    def complete_next_stage(self, tournament, previous_stage, next_stage):
+        """Completa la siguiente etapa basada en los ganadores de la anterior"""
+        # Obtener partidos de la etapa anterior
+        previous_matches = Match.objects.filter(
+            tournament=tournament,
+            stage=previous_stage,
+            played=True
         )
         
-        match_data = []
-        for match in matches:
-            participants_data = []
+        if not previous_matches.exists():
+            return Response({'error': f'No completed matches found for {previous_stage} stage'}, status=400)
+        
+        # Obtener ganadores
+        winners = []
+        for match in previous_matches:
+            # Usar TeamEntry en lugar de Participant
+            team_entries = match.team_entries.all()
+            if len(team_entries) != 2:
+                continue
+                
+            team1 = team_entries[0].assigned_team
+            team2 = team_entries[1].assigned_team
             
-            for participant in match.participants.all():
-                participant_info = {
-                    'id': participant.id,
-                    'players': [
-                        {
-                            'id': player.id,
-                            'display_name': player.display_name,
-                            'avatar': player.avatar.url if player.avatar else None
-                        }
-                        for player in participant.players.all()
-                    ],
-                    'assigned_team': {
-                        'id': participant.assigned_team.id,
-                        'name': participant.assigned_team.name,
-                        'logo': participant.assigned_team.logo.url if participant.assigned_team.logo else None
-                    } if participant.assigned_team else None,
-                    'team_name': str(participant)
-                }
-                participants_data.append(participant_info)
+            goals = match.goals or {}
             
-            match_info = {
-                'id': match.id,
-                'stage': match.stage,
-                'group_code': match.group_code,
-                'played': match.played,
-                'goals': match.goals,
-                'participants': participants_data,
-                'created_at': match.created_at,
-                'updated_at': match.updated_at
-            }
-            match_data.append(match_info)
-
+            if team1 and team2:
+                team1_goals = goals.get(str(team_entries[0].id), 0)
+                team2_goals = goals.get(str(team_entries[1].id), 0)
+                
+                if team1_goals > team2_goals:
+                    winners.append(team1)
+                elif team2_goals > team1_goals:
+                    winners.append(team2)
+        
+        if len(winners) < 2:
+            return Response({'error': 'Not enough winners to generate next stage'}, status=400)
+        
+        # Buscar partidos existentes de la siguiente etapa
+        existing_matches = Match.objects.filter(
+            tournament=tournament,
+            stage=next_stage
+        ).order_by('id')
+        
+        if existing_matches.exists():
+            # Actualizar partidos existentes con los ganadores
+            for i, match in enumerate(existing_matches):
+                if i * 2 < len(winners):
+                    match.team_entries.set([winners[i * 2]])
+                if i * 2 + 1 < len(winners):
+                    match.team_entries.add(winners[i * 2 + 1])
+                match.save()
+        else:
+            # Generar nuevos partidos
+            from .brackets import generate_knockout_bracket
+            matches = generate_knockout_bracket(tournament, winners, next_stage)
+        
         return Response({
-            'tournament_id': tournament.id,
-            'tournament_name': tournament.name,
-            'matches': match_data
-        })
-
-class KnockoutPreviewView(APIView):
-    def get(self, request, tournament_id):
-      try:
-        tournament = Tournament.objects.get(pk=tournament_id)
-      except Tournament.DoesNotExist:
-        return Response({'error': 'Tournament not found'}, status=404)
-
-      # Simulación: se esperan 8 equipos para cuartos
-      expected_slots = 8
-      current_entries = TeamEntry.objects.filter(tournament=tournament)
-      current_count = current_entries.count()
-      missing = max(0, expected_slots - current_count)
-
-      # Clasificación paso a paso
-      standings = GroupStanding.objects.filter(tournament=tournament)
-      steps = []
-      group_map = {}
-
-      for s in standings:
-        group_map.setdefault(s.group_code, []).append(s)
-
-      for group_code, group_standings in group_map.items():
-        ordered = sorted(group_standings, key=lambda x: (x.points, x.goal_difference), reverse=True)
-        if len(ordered) >= 2:
-            steps.append({
-                'type': 'group_winner',
-                'team_entry_id': ordered[0].team_entry.id,
-                'team_name': str(ordered[0].team_entry),
-                'group': group_code
-            })
-            steps.append({
-                'type': 'group_runner_up',
-                'team_entry_id': ordered[1].team_entry.id,
-                'team_name': str(ordered[1].team_entry),
-                'group': group_code
-            })
-        if len(ordered) >= 3:
-            steps.append({
-                'type': 'best_third',
-                'team_entry_id': ordered[2].team_entry.id,
-                'team_name': str(ordered[2].team_entry),
-                'group': group_code,
-                'status': 'pending' if missing else 'qualified'
-            })
-
-      # Simular partidos generados (puedes reemplazar con Match.objects.filter(...))
-      matches = Match.objects.filter(tournament=tournament, stage__in=['quarterfinal', 'semifinal', 'final'])
-
-      match_data = []
-      for m in matches:
-        p = list(m.participants.all())
-        match_data.append({
-            'id': m.id,
-            'stage': m.stage,
-            'team1': {'name': str(p[0])} if len(p) > 0 else None,
-            'team2': {'name': str(p[1])} if len(p) > 1 else None,
-            'placeholder_team1': f'Winner of M{m.player_slot_1.id}' if m.player_slot_1 else None,
-            'placeholder_team2': f'Winner of M{m.player_slot_2.id}' if m.player_slot_2 else None
-        })
-
-      return Response({
-        'stage': 'quarterfinal',
-        'expected_slots': expected_slots,
-        'current_entries': current_count,
-        'missing_slots': missing,
-        'qualification_steps': steps,
-        'main_bracket': {
-          'matches': match_data
-        }
-      }, status=200)
-
-# Actualizar la vista de guardar resultado de partido
-class SaveMatchResultView(APIView):
-    def post(self, request, match_id):
-        try:
-            match = Match.objects.get(pk=match_id)
-        except Match.DoesNotExist:
-            return Response({'error': 'Match not found'}, status=404)
-
-        goals = request.data.get('goals', {})
-        
-        # Validar que los goals correspondan a los participantes
-        participants = list(match.participants.all())
-        for participant_id in goals.keys():
-            if not any(str(p.id) == participant_id for p in participants):
-                return Response({'error': f'Invalid participant ID: {participant_id}'}, status=400)
-
-        # Actualizar partido
-        match.goals = goals
-        match.played = True
-        match.save()
-
-        # Actualizar estadísticas de jugadores y equipos
-        for participant in participants:
-            # Actualizar estadísticas de jugadores
-            for player in participant.players.all():
-                update_player_stats(player.id)
-            
-            # Actualizar estadísticas del equipo si tiene uno asignado
-            if participant.assigned_team:
-                update_team_stats(participant.assigned_team.id)
-        
-        # Actualizar estado del torneo
-        update_tournament_status(match.tournament.id)
-        
-        # Si es un partido de liga, actualizar clasificación
-        if match.stage == 'league':
-            update_tournament_standings(match.tournament.id)
-        
-        # Si es un partido de grupo, actualizar clasificación de grupos
-        if match.stage == 'group':
-            update_group_standings(match.tournament.id)
-
-        return Response({'message': 'Match result saved successfully'}, status=200)
+            'message': f'{next_stage.capitalize()} stage completed with {len(winners)} teams',
+            'winners_count': len(winners),
+            'matches_updated': existing_matches.count() if existing_matches.exists() else len(matches),
+            'stage': next_stage
+        }, status=201)
 
 class GenerateLeagueMatchesView(APIView):
     def post(self, request, tournament_id):
@@ -627,16 +672,47 @@ class GenerateLeagueMatchesView(APIView):
         except Tournament.DoesNotExist:
             return Response({'error': 'Tournament not found'}, status=404)
         
-        if tournament.competition_type not in ['league', 'hybrid']:
-            return Response({'error': 'Tournament is not a league type'}, status=400)
-        
-        # Generar partidos de liga
-        matches = generate_league_matches(tournament)
-        
-        return Response({
-            'message': f'{len(matches)} league matches generated',
-            'matches_created': [m.id for m in matches]
-        }, status=201)
+        try:
+            # Obtener equipos del torneo
+            entries = TeamEntry.objects.filter(tournament=tournament)
+            teams = [entry.assigned_team for entry in entries if entry.assigned_team]
+            
+            if len(teams) < 2:
+                return Response({'error': 'Se necesitan al menos 2 equipos para generar partidos'}, status=400)
+            
+            # Generar todos los partidos posibles (todos contra todos)
+            matches_created = []
+            for i, team1 in enumerate(teams):
+                for j, team2 in enumerate(teams):
+                    if i < j:  # Evitar partidos duplicados y contra sí mismo
+                        match = Match.objects.create(
+                            tournament=tournament,
+                            stage='league',
+                            played=False,
+                            goals={}
+                        )
+                        
+                        # Crear participantes
+                        team1_entry = TeamEntry.objects.create(
+                            match=match,
+                            assigned_team=team1,
+                            position=0
+                        )
+                        team2_entry = TeamEntry.objects.create(
+                            match=match,
+                            assigned_team=team2,
+                            position=1
+                        )
+                        
+                        matches_created.append(match)
+            
+            return Response({
+                'message': f'Se generaron {len(matches_created)} partidos de liga',
+                'matches_count': len(matches_created)
+            })
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
 class GeneratePlayoffsView(APIView):
     def post(self, request, tournament_id):
@@ -645,21 +721,53 @@ class GeneratePlayoffsView(APIView):
         except Tournament.DoesNotExist:
             return Response({'error': 'Tournament not found'}, status=404)
         
-        # Obtener los mejores equipos según la clasificación
-        standings = TournamentStanding.objects.filter(tournament=tournament)
-        top_teams = [s.team_entry for s in standings[:tournament.playoff_teams]]
-        
-        if len(top_teams) < 2:
-            return Response({'error': 'Not enough teams for playoffs'}, status=400)
-        
-        # Generar partidos de playoffs (usar la función existente de knockout)
-        from .brackets import generate_knockout_bracket
-        matches = generate_knockout_bracket(tournament, top_teams, 'quarterfinal')
-        
-        return Response({
-            'message': f'Playoffs generated with {len(top_teams)} teams',
-            'matches_created': [m.id for m in matches]
-        }, status=201)
+        try:
+            # Obtener clasificación de la liga
+            standings = TournamentStanding.objects.filter(tournament=tournament).order_by('-points', '-goal_difference', '-goals_for')
+            
+            # Tomar los mejores equipos según playoff_teams
+            playoff_count = tournament.playoff_teams or 4
+            qualified_teams = list(standings[:playoff_count])
+            
+            if len(qualified_teams) < 2:
+                return Response({'error': 'Se necesitan al menos 2 equipos clasificados para generar playoffs'}, status=400)
+            
+            # Generar partidos de playoffs
+            matches_created = []
+            for i in range(0, len(qualified_teams), 2):
+                if i + 1 < len(qualified_teams):
+                    team1 = qualified_teams[i].team
+                    team2 = qualified_teams[i + 1].team
+                    
+                    match = Match.objects.create(
+                        tournament=tournament,
+                        stage='playoff',
+                        played=False,
+                        goals={}
+                    )
+                    
+                    # Crear participantes
+                    team1_entry = TeamEntry.objects.create(
+                        match=match,
+                        assigned_team=team1,
+                        position=0
+                    )
+                    team2_entry = TeamEntry.objects.create(
+                        match=match,
+                        assigned_team=team2,
+                        position=1
+                    )
+                    
+                    matches_created.append(match)
+            
+            return Response({
+                'message': f'Se generaron {len(matches_created)} partidos de playoffs',
+                'matches_count': len(matches_created),
+                'qualified_teams': len(qualified_teams)
+            })
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
 class TournamentStandingsView(APIView):
     def get(self, request, tournament_id):
@@ -668,23 +776,33 @@ class TournamentStandingsView(APIView):
         except Tournament.DoesNotExist:
             return Response({'error': 'Tournament not found'}, status=404)
         
-        standings = TournamentStanding.objects.filter(tournament=tournament)
-        serializer = TournamentStandingSerializer(standings, many=True)
-        
-        return Response(serializer.data, status=200)
-
-class UpdateTournamentStandingsView(APIView):
-    def post(self, request, tournament_id):
         try:
-            tournament = Tournament.objects.get(pk=tournament_id)
-        except Tournament.DoesNotExist:
-            return Response({'error': 'Tournament not found'}, status=404)
-        
-        update_tournament_standings(tournament_id)
-        
-        return Response({'message': 'Standings updated successfully'}, status=200)
+            # Obtener clasificación del torneo
+            standings = TournamentStanding.objects.filter(tournament=tournament).order_by('-points', '-goal_difference', '-goals_for')
+            
+            # Serializar datos
+            standings_data = []
+            for standing in standings:
+                standings_data.append({
+                    'id': standing.team.id,
+                    'name': standing.team.name,
+                    'logo': standing.team.logo.url if standing.team.logo else None,
+                    'matches_played': standing.matches_played,
+                    'wins': standing.wins,
+                    'draws': standing.draws,
+                    'losses': standing.losses,
+                    'goals_for': standing.goals_for,
+                    'goals_against': standing.goals_against,
+                    'goal_difference': standing.goal_difference,
+                    'points': standing.points,
+                    'position': standings_data.index(standing) + 1
+                })
+            
+            return Response(standings_data)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
-# Nueva vista para clasificaciones de grupos
 class GroupStandingsView(APIView):
     def get(self, request, tournament_id):
         try:
@@ -692,33 +810,41 @@ class GroupStandingsView(APIView):
         except Tournament.DoesNotExist:
             return Response({'error': 'Tournament not found'}, status=404)
         
-        # Obtener todas las clasificaciones de grupos
-        standings = GroupStanding.objects.filter(tournament=tournament)
-        
-        # Agrupar por código de grupo
-        group_standings = {}
-        for standing in standings:
-            group_code = standing.group_code
-            if group_code not in group_standings:
-                group_standings[group_code] = []
-            group_standings[group_code].append(standing)
-        
-        # Ordenar cada grupo por puntos, diferencia de goles, etc.
-        for group_code in group_standings:
-            group_standings[group_code].sort(
-                key=lambda x: (x.points, x.goal_difference, x.goals_for),
-                reverse=True
+        try:
+            # Obtener clasificaciones de grupos
+            group_standings = GroupStanding.objects.filter(tournament=tournament).order_by(
+                'group_code', '-points', '-goal_difference', '-goals_for'
             )
-        
-        # Serializar los datos
-        result = {}
-        for group_code, standings_list in group_standings.items():
-            serializer = GroupStandingSerializer(standings_list, many=True)
-            result[group_code] = serializer.data
-        
-        return Response(result, status=200)
+            
+            # Agrupar por código de grupo
+            standings_by_group = {}
+            for standing in group_standings:
+                group_code = standing.group_code
+                if group_code not in standings_by_group:
+                    standings_by_group[group_code] = []
+                
+                standing_data = {
+                    'id': standing.team.id,
+                    'name': standing.team.name,
+                    'logo_url': request.build_absolute_uri(standing.team.logo.url) if standing.team.logo else None,
+                    'group_code': standing.group_code,
+                    'matches_played': standing.matches_played,
+                    'wins': standing.wins,
+                    'draws': standing.draws,
+                    'losses': standing.losses,
+                    'goals_for': standing.goals_for,
+                    'goals_against': standing.goals_against,
+                    'goal_difference': standing.goal_difference,
+                    'points': standing.points,
+                    'position': len(standings_by_group[group_code]) + 1
+                }
+                standings_by_group[group_code].append(standing_data)
+            
+            return Response(standings_by_group)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
-# Nueva vista para generar fase eliminatoria
 class GenerateKnockoutStageView(APIView):
     def post(self, request, tournament_id):
         try:
@@ -726,68 +852,49 @@ class GenerateKnockoutStageView(APIView):
         except Tournament.DoesNotExist:
             return Response({'error': 'Tournament not found'}, status=404)
         
-        if not tournament.has_knockout:
-            return Response({'error': 'Knockout stage is disabled in this tournament'}, status=400)
-        
-        # Verificar que todos los partidos de grupos estén completados
-        group_matches = Match.objects.filter(tournament=tournament, stage='group')
-        if not group_matches.exists():
-            return Response({'error': 'No group matches found'}, status=400)
-        
-        unplayed_matches = group_matches.filter(played=False)
-        if unplayed_matches.exists():
-            return Response({
-                'error': 'Not all group matches are completed',
-                'unplayed_matches': unplayed_matches.count()
-            }, status=400)
-        
-        # Obtener los equipos clasificados
-        from .brackets import get_best_third_place_teams
-        
-        # Obtener primeros y segundos de cada grupo
-        qualified_teams = []
-        standings = GroupStanding.objects.filter(tournament=tournament)
-        
-        # Agrupar por grupo
-        group_map = {}
-        for standing in standings:
-            group_map.setdefault(standing.group_code, []).append(standing)
-        
-        # Tomar los 2 mejores de cada grupo
-        for group_code, group_standings in group_map.items():
-            sorted_standings = sorted(
-                group_standings,
-                key=lambda x: (x.points, x.goal_difference, x.goals_for),
-                reverse=True
-            )
+        try:
+            # Obtener equipos clasificados
+            qualified_teams_data = get_qualified_teams_for_knockout(tournament)
             
-            # Agregar primero y segundo
-            if len(sorted_standings) >= 1:
-                qualified_teams.append(sorted_standings[0].team_entry)
-            if len(sorted_standings) >= 2:
-                qualified_teams.append(sorted_standings[1].team_entry)
-        
-        # Si necesitamos más equipos, tomar los mejores terceros
-        expected_teams = 8  # Para cuartos de final
-        if len(qualified_teams) < expected_teams:
-            needed_third_place = expected_teams - len(qualified_teams)
-            third_place_teams = get_best_third_place_teams(tournament, needed_third_place)
-            qualified_teams.extend(third_place_teams)
-        
-        if len(qualified_teams) < 2:
-            return Response({'error': 'Not enough qualified teams for knockout stage'}, status=400)
-        
-        # Generar el bracket eliminatorio
-        from .brackets import generate_knockout_bracket
-        matches = generate_knockout_bracket(tournament, qualified_teams, 'quarterfinal')
-        
-        return Response({
-            'message': f'Knockout stage generated with {len(qualified_teams)} teams',
-            'qualified_teams': len(qualified_teams),
-            'matches_created': len(matches)
-        }, status=201)
+            # Determinar estrategia según cantidad de equipos
+            total_teams = qualified_teams_data['total_qualified']
+            
+            if total_teams <= 2:
+                # Generar final directamente
+                stage = 'final'
+                strategy = 'direct_final'
+            elif total_teams <= 4:
+                # Generar semifinales
+                stage = 'semifinal'
+                strategy = 'semifinals'
+            elif total_teams <= 8:
+                # Generar cuartos de final
+                stage = 'quarterfinal'
+                strategy = 'quarterfinals'
+            else:
+                # Generar octavos de final
+                stage = 'round_of_16'
+                strategy = 'round_of_16'
+            
+            # Generar partidos usando la función existente
+            from .brackets import generate_knockout_bracket
+            qualified_teams = []
+            for team_list in [qualified_teams_data['group_winners'], qualified_teams_data['group_runners_up'], qualified_teams_data['best_third_place']]:
+                qualified_teams.extend(team_list)
+            
+            matches_created = generate_knockout_bracket(tournament, qualified_teams, stage)
+            
+            return Response({
+                'message': f'Fase eliminatoria generada: {stage}',
+                'strategy': strategy,
+                'stage': stage,
+                'qualified_teams': len(qualified_teams),
+                'matches_created': len(matches_created)
+            })
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
-# Nueva vista para obtener equipos clasificados
 class QualifiedTeamsView(APIView):
     def get(self, request, tournament_id):
         try:
@@ -795,48 +902,338 @@ class QualifiedTeamsView(APIView):
         except Tournament.DoesNotExist:
             return Response({'error': 'Tournament not found'}, status=404)
         
-        # Verificar que el torneo tenga fase de grupos
-        if not tournament.has_group_stage:
-            return Response({'error': 'Tournament does not have group stage'}, status=400)
+        try:
+            # Obtener equipos clasificados
+            qualified_teams_data = get_qualified_teams_for_knockout(tournament)
+            
+            return Response(qualified_teams_data)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+class CompletePlayoffQualificationView(APIView):
+    def post(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
         
-        # Obtener equipos clasificados
-        qualified_teams = get_qualified_teams_for_knockout(tournament)
-        
-        # Serializar los datos
-        from .serializers import TeamEntrySerializer
-        
-        def serialize_qualified_team(team_data):
-            team_entry_data = TeamEntrySerializer(team_data['team_entry']).data
-            return {
-                'team_entry': team_entry_data,
-                'group_code': team_data['group_code'],
-                'position': team_data['position'],
-                'points': team_data['points'],
-                'goal_difference': team_data['goal_difference'],
-                'goals_for': team_data['goals_for'],
-                'qualification_type': get_qualification_type(team_data['position'])
-            }
-        
-        def get_qualification_type(position):
-            if position == 1:
-                return 'group_winner'
-            elif position == 2:
-                return 'group_runner_up'
+        try:
+            # Obtener partidos de calificación de playoffs
+            playoff_matches = Match.objects.filter(
+                tournament=tournament,
+                stage='playoff_qualification',
+                played=True
+            )
+            
+            if not playoff_matches.exists():
+                return Response({'error': 'No hay partidos de calificación completados'}, status=400)
+            
+            # Obtener ganadores de los playoffs
+            winners = []
+            for match in playoff_matches:
+                goals = match.goals
+                if goals:
+                    # Encontrar el participante con más goles
+                    max_goals = 0
+                    winner_participant = None
+                    
+                    for participant in match.participants.all():
+                        participant_goals = goals.get(str(participant.id), 0)
+                        if participant_goals > max_goals:
+                            max_goals = participant_goals
+                            winner_participant = participant
+                    
+                    if winner_participant and winner_participant.assigned_team:
+                        winners.append(winner_participant.assigned_team)
+            
+            # Generar siguiente etapa con los ganadores
+            if len(winners) >= 2:
+                from .brackets import generate_knockout_bracket
+                matches_created = generate_knockout_bracket(tournament, winners, 'quarterfinal')
+                
+                return Response({
+                    'message': f'Calificación de playoffs completada. {len(winners)} equipos avanzan.',
+                    'winners_count': len(winners),
+                    'matches_created': len(matches_created)
+                })
             else:
-                return 'best_third_place'
+                return Response({'error': 'No hay suficientes ganadores para continuar'}, status=400)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+class StandingsView(APIView):
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
         
-        # Serializar cada categoría
-        result = {
-            'group_winners': [serialize_qualified_team(team) for team in qualified_teams['group_winners']],
-            'group_runners_up': [serialize_qualified_team(team) for team in qualified_teams['group_runners_up']],
-            'best_third_place': [serialize_qualified_team(team) for team in qualified_teams['best_third_place']],
-            'total_qualified': qualified_teams['total_qualified'],
-            'tournament_info': {
-                'id': tournament.id,
-                'name': tournament.name,
-                'format': tournament.format,
-                'has_knockout': tournament.has_knockout
+        standings_type = request.query_params.get('type', 'tournament')
+        
+        try:
+            if standings_type == 'group':
+                return self.get_group_standings(tournament, request)
+            else:
+                return self.get_tournament_standings(tournament, request)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+    
+    def get_tournament_standings(self, tournament, request):
+        """Obtener clasificación del torneo"""
+        standings = TournamentStanding.objects.filter(tournament=tournament).order_by('-points', '-goal_difference', '-goals_for')
+        
+        # Serializar datos
+        standings_data = []
+        for standing in standings:
+            standings_data.append({
+                'id': standing.team.id,
+                'name': standing.team.name,
+                'logo': standing.team.logo.url if standing.team.logo else None,
+                'matches_played': standing.matches_played,
+                'wins': standing.wins,
+                'draws': standing.draws,
+                'losses': standing.losses,
+                'goals_for': standing.goals_for,
+                'goals_against': standing.goals_against,
+                'goal_difference': standing.goal_difference,
+                'points': standing.points,
+                'position': standings_data.index(standing) + 1
+            })
+        
+        return Response(standings_data)
+    
+    def get_group_standings(self, tournament, request):
+        """Obtener clasificaciones de grupos"""
+        group_standings = GroupStanding.objects.filter(tournament=tournament).order_by(
+            'group_code', '-points', '-goal_difference', '-goals_for'
+        )
+        
+        # Agrupar por código de grupo
+        standings_by_group = {}
+        for standing in group_standings:
+            group_code = standing.group_code
+            if group_code not in standings_by_group:
+                standings_by_group[group_code] = []
+            
+            standing_data = {
+                'id': standing.team.id,
+                'name': standing.team.name,
+                'logo_url': request.build_absolute_uri(standing.team.logo.url) if standing.team.logo else None,
+                'group_code': standing.group_code,
+                'matches_played': standing.matches_played,
+                'wins': standing.wins,
+                'draws': standing.draws,
+                'losses': standing.losses,
+                'goals_for': standing.goals_for,
+                'goals_against': standing.goals_against,
+                'goal_difference': standing.goal_difference,
+                'points': standing.points,
+                'position': len(standings_by_group[group_code]) + 1
             }
+            standings_by_group[group_code].append(standing_data)
+        
+        return Response(standings_by_group)
+
+class TournamentMatchesView(APIView):
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+        
+        try:
+            # Obtener todos los partidos del torneo
+            matches = Match.objects.filter(tournament=tournament).prefetch_related(
+                'participants__assigned_team',
+                'participants__players'
+            )
+            
+            # Serializar partidos
+            matches_data = []
+            for match in matches:
+                participants_data = []
+                for participant in match.participants.all():
+                    participant_data = {
+                        'id': participant.id,
+                        'position': participant.position,
+                        'assigned_team': {
+                            'id': participant.assigned_team.id,
+                            'name': participant.assigned_team.name,
+                            'logo_url': request.build_absolute_uri(participant.assigned_team.logo.url) if participant.assigned_team.logo else None
+                        } if participant.assigned_team else None,
+                        'players': [
+                            {
+                                'id': player.id,
+                                'name': player.display_name,
+                                'avatar_url': request.build_absolute_uri(player.avatar.url) if player.avatar else None
+                            }
+                            for player in participant.players.all()
+                        ]
+                    }
+                    participants_data.append(participant_data)
+                
+                match_data = {
+                    'id': match.id,
+                    'stage': match.stage,
+                    'played': match.played,
+                    'goals': match.goals,
+                    'participants': participants_data,
+                    'created_at': match.created_at,
+                    'updated_at': match.updated_at
+                }
+                matches_data.append(match_data)
+            
+            return Response(matches_data)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+class KnockoutStageView(APIView):
+    def post(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+        
+        try:
+            stage_data = request.data.get('stage')
+            
+            if stage_data:
+                # Completar etapa específica
+                return self.complete_stage(tournament, stage_data)
+            else:
+                # Generar nueva etapa
+                return self.generate_stage(tournament)
+                
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+    
+    def complete_stage(self, tournament, stage):
+        """Completar etapa existente"""
+        # Obtener partidos de la etapa anterior
+        previous_stage_map = {
+            'semifinal': 'quarterfinal',
+            'final': 'semifinal'
         }
         
-        return Response(result, status=200)
+        previous_stage = previous_stage_map.get(stage)
+        if not previous_stage:
+            return Response({'error': 'Etapa no válida'}, status=400)
+        
+        # Obtener ganadores de la etapa anterior
+        previous_matches = Match.objects.filter(
+            tournament=tournament,
+            stage=previous_stage,
+            played=True
+        )
+        
+        winners = []
+        for match in previous_matches:
+            goals = match.goals
+            if goals:
+                # Encontrar el participante con más goles
+                max_goals = 0
+                winner_participant = None
+                
+                for participant in match.participants.all():
+                    participant_goals = goals.get(str(participant.id), 0)
+                    if participant_goals > max_goals:
+                        max_goals = participant_goals
+                        winner_participant = participant
+                
+                if winner_participant and winner_participant.assigned_team:
+                    winners.append(winner_participant.assigned_team)
+        
+        if len(winners) < 2:
+            return Response({'error': 'No hay suficientes ganadores para continuar'}, status=400)
+        
+        # Generar partidos de la nueva etapa
+        from .brackets import generate_knockout_bracket
+        matches_created = generate_knockout_bracket(tournament, winners, stage)
+        
+        return Response({
+            'message': f'Etapa {stage} completada',
+            'stage': stage,
+            'winners_count': len(winners),
+            'matches_created': len(matches_created)
+        })
+    
+    def generate_stage(self, tournament):
+        """Generar nueva etapa de eliminatorias"""
+        # Obtener equipos clasificados
+        qualified_teams_data = get_qualified_teams_for_knockout(tournament)
+        
+        # Determinar estrategia según cantidad de equipos
+        total_teams = qualified_teams_data['total_qualified']
+        
+        if total_teams <= 2:
+            # Generar final directamente
+            stage = 'final'
+            strategy = 'direct_final'
+        elif total_teams <= 4:
+            # Generar semifinales
+            stage = 'semifinal'
+            strategy = 'semifinals'
+        elif total_teams <= 8:
+            # Generar cuartos de final
+            stage = 'quarterfinal'
+            strategy = 'quarterfinals'
+        else:
+            # Generar octavos de final
+            stage = 'round_of_16'
+            strategy = 'round_of_16'
+        
+        # Generar partidos usando la función existente
+        from .brackets import generate_knockout_bracket
+        qualified_teams = []
+        for team_list in [qualified_teams_data['group_winners'], qualified_teams_data['group_runners_up'], qualified_teams_data['best_third_place']]:
+            qualified_teams.extend(team_list)
+        
+        matches_created = generate_knockout_bracket(tournament, qualified_teams, stage)
+        
+        return Response({
+            'message': f'Fase eliminatoria generada: {stage}',
+            'strategy': strategy,
+            'stage': stage,
+            'qualified_teams': len(qualified_teams),
+            'matches_created': len(matches_created)
+        })
+
+class KnockoutPreviewView(APIView):
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(pk=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+        
+        try:
+            # Obtener equipos clasificados
+            qualified_teams_data = get_qualified_teams_for_knockout(tournament)
+            
+            # Determinar estructura de eliminatorias
+            total_teams = qualified_teams_data['total_qualified']
+            
+            # Determinar etapas necesarias
+            if total_teams <= 2:
+                stages = ['final']
+            elif total_teams <= 4:
+                stages = ['semifinal', 'final']
+            elif total_teams <= 8:
+                stages = ['quarterfinal', 'semifinal', 'final']
+            else:
+                stages = ['round_of_16', 'quarterfinal', 'semifinal', 'final']
+            
+            preview_data = {
+                'tournament_id': tournament.id,
+                'total_qualified_teams': total_teams,
+                'stages': stages,
+                'qualified_teams': qualified_teams_data,
+                'estimated_matches': sum(len(stages) * 2 ** (i - 1) for i in range(len(stages)))
+            }
+            
+            return Response(preview_data)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)

@@ -3,7 +3,7 @@
     <v-row>
       <!-- Estado de la eliminatoria -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-trophy</v-icon>
             Estado de la Eliminatoria
@@ -49,7 +49,7 @@
 
       <!-- Próximos partidos -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-calendar-clock</v-icon>
             Próximos Partidos
@@ -72,7 +72,7 @@
                 <div class="d-flex align-center justify-space-between">
                   <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium">
-                      {{ match.team1_name || 'Equipo 1' }} vs {{ match.team2_name || 'Equipo 2' }}
+                      {{ match.team1?.name || 'Por definir' }} vs {{ match.team2?.name || 'Por definir' }}
                     </div>
                     <div class="text-caption text-grey-darken-1">
                       {{ getPhaseText(match.stage) }}
@@ -104,7 +104,7 @@
 
       <!-- Ganador actual -->
       <v-col v-if="currentWinner" cols="12">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-crown</v-icon>
             Ganador Actual
@@ -133,7 +133,7 @@
 
       <!-- Acciones -->
       <v-col cols="12">
-        <v-card variant="outlined" rounded="xl">
+        <v-card rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-lightning-bolt</v-icon>
             Acciones

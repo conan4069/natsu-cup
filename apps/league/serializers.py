@@ -1,12 +1,23 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import GameTeam, Player, Tournament, TeamEntry, Match, GroupStanding, TournamentStanding
+import random
 
 class PlayerSerializer(serializers.ModelSerializer):
     stats = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Player
-        fields = ['id', 'display_name', 'avatar', 'stats']
+        fields = ['id', 'display_name', 'avatar', 'avatar_url', 'stats']
+    
+    def get_avatar_url(self, obj):
+        if obj.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.avatar.url)
+            return f"{settings.MEDIA_URL}{obj.avatar}"
+        return None
     
     def get_stats(self, obj):
         return {
@@ -21,10 +32,19 @@ class PlayerSerializer(serializers.ModelSerializer):
 
 class GameTeamSerializer(serializers.ModelSerializer):
     stats = serializers.SerializerMethodField()
+    logo_url = serializers.SerializerMethodField()
     
     class Meta:
         model = GameTeam
         fields = '__all__'
+    
+    def get_logo_url(self, obj):
+        if obj.logo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return f"{settings.MEDIA_URL}{obj.logo}"
+        return None
     
     def get_stats(self, obj):
         return {
@@ -92,7 +112,7 @@ class TeamEntrySerializer(serializers.ModelSerializer):
         return players
 
 class MatchSerializer(serializers.ModelSerializer):
-    participants = TeamEntrySerializer(many=True, read_only=True)
+    participants = serializers.SerializerMethodField()
     team1 = serializers.SerializerMethodField()
     team2 = serializers.SerializerMethodField()
     team1_score = serializers.SerializerMethodField()
@@ -105,22 +125,94 @@ class MatchSerializer(serializers.ModelSerializer):
         model = Match
         fields = '__all__'
     
+    def get_participants(self, obj):
+        # Usar TeamEntrySerializer con contexto
+        serializer = TeamEntrySerializer(obj.participants.all(), many=True, context=self.context)
+        return serializer.data
+    
     def get_team1(self, obj):
         participants = list(obj.participants.all())
         if participants:
+            team_entry = participants[0]
             return {
-                'id': participants[0].id,
-                'name': str(participants[0])
+                'id': team_entry.id,
+                'name': self.get_team_display_name(team_entry),
+                'logo_url': self.get_team_logo_url(team_entry),
+                'players': [
+                    {
+                        'id': player.id,
+                        'name': player.display_name,
+                        'avatar_url': self.get_player_avatar_url(player)
+                    }
+                    for player in team_entry.players.all()
+                ]
+            }
+        # Si no hay participantes pero hay slots conectados, mostrar placeholder
+        elif obj.player_slot_1:
+            return {
+                'id': None,
+                'name': f'Ganador M{obj.player_slot_1.id}',
+                'logo_url': None,
+                'players': []
             }
         return None
     
     def get_team2(self, obj):
         participants = list(obj.participants.all())
         if len(participants) > 1:
+            team_entry = participants[1]
             return {
-                'id': participants[1].id,
-                'name': str(participants[1])
+                'id': team_entry.id,
+                'name': self.get_team_display_name(team_entry),
+                'logo_url': self.get_team_logo_url(team_entry),
+                'players': [
+                    {
+                        'id': player.id,
+                        'name': player.display_name,
+                        'avatar_url': self.get_player_avatar_url(player)
+                    }
+                    for player in team_entry.players.all()
+                ]
             }
+        # Si no hay participantes pero hay slots conectados, mostrar placeholder
+        elif obj.player_slot_2:
+            return {
+                'id': None,
+                'name': f'Ganador M{obj.player_slot_2.id}',
+                'logo_url': None,
+                'players': []
+            }
+        return None
+    
+    def get_team_display_name(self, team_entry):
+        """
+        Obtiene el nombre de visualización del equipo.
+        """
+        if team_entry.assigned_team:
+            return team_entry.assigned_team.name
+        
+        player_names = [player.display_name for player in team_entry.players.all()]
+        if len(player_names) == 1:
+            return player_names[0]
+        elif len(player_names) == 2:
+            return f"{player_names[0]} & {player_names[1]}"
+        else:
+            return f"Equipo {team_entry.id}"
+    
+    def get_team_logo_url(self, team_entry):
+        if team_entry.assigned_team and team_entry.assigned_team.logo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(team_entry.assigned_team.logo.url)
+            return f"/media/{team_entry.assigned_team.logo}"
+        return None
+    
+    def get_player_avatar_url(self, player):
+        if player.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(player.avatar.url)
+            return f"/media/{player.avatar}"
         return None
     
     def get_team1_score(self, obj):
@@ -143,19 +235,18 @@ class MatchSerializer(serializers.ModelSerializer):
         if len(participants) < 2:
             return None
         
-        team1_id = str(participants[0].id)
-        team2_id = str(participants[1].id)
-        team1_goals = obj.goals.get(team1_id, 0)
-        team2_goals = obj.goals.get(team2_id, 0)
+        team1_goals = obj.goals.get(str(participants[0].id), 0)
+        team2_goals = obj.goals.get(str(participants[1].id), 0)
         
         if team1_goals > team2_goals:
             return 'team1'
         elif team2_goals > team1_goals:
             return 'team2'
-        return 'draw'
+        else:
+            return 'draw'
 
 class GroupStandingSerializer(serializers.ModelSerializer):
-    team_entry = TeamEntrySerializer(read_only=True)
+    team_entry = serializers.SerializerMethodField()
     goal_difference = serializers.SerializerMethodField()
 
     class Meta:
@@ -165,16 +256,26 @@ class GroupStandingSerializer(serializers.ModelSerializer):
             'goals_for', 'goals_against', 'matches_played', 'wins', 'draws', 'losses', 'goal_difference'
         ]
 
+    def get_team_entry(self, obj):
+        # Usar TeamEntrySerializer con contexto
+        serializer = TeamEntrySerializer(obj.team_entry, context=self.context)
+        return serializer.data
+
     def get_goal_difference(self, obj):
         return obj.goal_difference
 
 class TournamentStandingSerializer(serializers.ModelSerializer):
-    team_entry = TeamEntrySerializer(read_only=True)
+    team_entry = serializers.SerializerMethodField()
     goal_difference = serializers.SerializerMethodField()
     
     class Meta:
         model = TournamentStanding
         fields = '__all__'
+    
+    def get_team_entry(self, obj):
+        # Usar TeamEntrySerializer con contexto
+        serializer = TeamEntrySerializer(obj.team_entry, context=self.context)
+        return serializer.data
     
     def get_goal_difference(self, obj):
         return obj.goal_difference

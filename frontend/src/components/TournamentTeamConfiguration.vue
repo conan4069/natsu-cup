@@ -7,7 +7,7 @@
       </v-alert>
 
       <!-- Configuración de equipos -->
-      <v-card class="mb-6" variant="outlined" rounded="xl">
+      <v-card class="mb-6" rounded="xl" variant="outlined">
         <v-card-title class="text-subtitle-1 d-flex align-center justify-space-between">
           Asignación de equipos
           <v-btn
@@ -41,14 +41,14 @@
                 v-for="participant in participants"
                 :key="participant.id"
                 class="participant-card mb-4"
-                variant="outlined"
                 rounded="xl"
+                variant="outlined"
               >
                 <v-card-text>
                   <div class="d-flex align-center mb-3">
                     <v-avatar class="mr-3" size="40">
                       <v-img
-                        v-if="participant.avatar"
+                        v-if="participant.avatar && participant.avatar !== 'null'"
                         alt="Avatar"
                         :src="participant.avatar"
                       />
@@ -212,7 +212,7 @@
                     <v-card-text class="text-center pa-3">
                       <v-avatar class="mb-2" size="40">
                         <v-img
-                          v-if="participant.avatar"
+                          v-if="participant.avatar && participant.avatar !== 'null'"
                           alt="Avatar"
                           :src="participant.avatar"
                         />
@@ -253,7 +253,7 @@
                         <div class="d-flex align-center">
                           <v-avatar class="mr-2" size="24">
                             <v-img
-                              v-if="player.avatar"
+                              v-if="player.avatar && player.avatar !== 'null'"
                               alt="Avatar"
                               :src="player.avatar"
                             />
@@ -322,7 +322,7 @@
                   <template #prepend>
                     <v-avatar size="32">
                       <v-img
-                        v-if="participant.avatar"
+                        v-if="participant.avatar && participant.avatar !== 'null'"
                         alt="Avatar"
                         :src="participant.avatar"
                       />
@@ -384,7 +384,7 @@
                           variant="text"
                           @click="selectPlayerForSwap(player, index)"
                         />
-                        <v-avatar v-if="player.avatar" class="mr-2" left size="20">
+                        <v-avatar v-if="player.avatar && player.avatar !== 'null'" class="mr-2" left size="20">
                           <v-img :src="player.avatar" />
                         </v-avatar>
                         <v-icon v-else class="mr-2" size="small">mdi-account</v-icon>

@@ -3,7 +3,7 @@
     <v-row>
       <!-- Estado de la liga -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-chart-line</v-icon>
             Estado de la Liga
@@ -53,7 +53,7 @@
 
       <!-- Clasificación actual -->
       <v-col cols="12" md="6">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-trophy</v-icon>
             Clasificación Actual
@@ -114,7 +114,7 @@
 
       <!-- Próximos partidos -->
       <v-col cols="12">
-        <v-card class="mb-4" variant="outlined" rounded="xl">
+        <v-card class="mb-4" rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-calendar-clock</v-icon>
             Próximos Partidos
@@ -137,7 +137,7 @@
                 <div class="d-flex align-center justify-space-between">
                   <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium">
-                      {{ match.team1_name || 'Equipo 1' }} vs {{ match.team2_name || 'Equipo 2' }}
+                      {{ match.team1?.name || 'Por definir' }} vs {{ match.team2?.name || 'Por definir' }}
                     </div>
                     <div class="text-caption text-grey-darken-1">
                       Jornada {{ match.round || 'N/A' }}
@@ -169,7 +169,7 @@
 
       <!-- Acciones -->
       <v-col cols="12">
-        <v-card variant="outlined" rounded="xl">
+        <v-card rounded="xl" variant="outlined">
           <v-card-title class="text-h6">
             <v-icon start>mdi-lightning-bolt</v-icon>
             Acciones
@@ -268,7 +268,7 @@
       matches.value = matchesResponse.data?.matches || matchesResponse.data || []
 
       // Cargar clasificación
-      const standingsResponse = await tournamentAPI.getTournamentStandings(props.tournament.id)
+      const standingsResponse = await tournamentAPI.getStandings(props.tournament.id, 'tournament')
       standings.value = standingsResponse.data || []
     } catch (error) {
       console.error('Error al cargar datos de la liga:', error)

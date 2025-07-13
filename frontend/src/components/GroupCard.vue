@@ -24,7 +24,7 @@
             <div class="team-header">
               <v-avatar class="mr-3" size="48">
                 <v-img
-                  v-if="team.assigned_team?.logo"
+                  v-if="team.assigned_team?.logo && team.assigned_team.logo !== 'null'"
                   :src="team.assigned_team.logo"
                   alt="Logo equipo"
                 />
@@ -44,9 +44,10 @@
                     size="small"
                     variant="outlined"
                   >
-                    <v-avatar v-if="player.avatar" left size="20">
+                    <v-avatar v-if="player.avatar && player.avatar !== 'null'" left size="20">
                       <v-img :src="player.avatar" />
                     </v-avatar>
+                    <v-icon v-else left size="20">mdi-account</v-icon>
                     {{ player.display_name }}
                   </v-chip>
                 </div>

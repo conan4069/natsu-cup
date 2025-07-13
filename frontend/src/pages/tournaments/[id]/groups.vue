@@ -21,19 +21,30 @@
           <div class="d-flex align-center mb-4">
             <v-btn
               class="mr-4"
+              color="white"
               icon="mdi-arrow-left"
               variant="text"
               @click="goBack"
             />
             <div class="flex-grow-1">
-              <h1 class="text-h4 font-weight-bold mb-2 page-title">{{ tournament.name }}</h1>
+              <h1 class="text-h4 font-weight-bold mb-2 page-title text-white">{{ tournament.name }}</h1>
               <p class="text-body-1 text-grey-darken-1">
                 Fase de Grupos - {{ tournament.format }}
               </p>
             </div>
             <div class="d-flex gap-2">
               <v-btn
-                v-if="groups.length === 0"
+                v-if="!tournament.has_group_stage"
+                color="warning"
+                disabled
+                prepend-icon="mdi-alert"
+                rounded="xl"
+                variant="outlined"
+              >
+                Fase de Grupos Deshabilitada
+              </v-btn>
+              <v-btn
+                v-else-if="groups.length === 0"
                 color="success"
                 :loading="generating"
                 prepend-icon="mdi-account-group"
@@ -65,54 +76,80 @@
           <v-card class="bg-white" variant="outlined">
             <v-card-title class="text-h6">
               <v-icon start>mdi-chart-line</v-icon>
-              Progreso de la Fase de Grupos
+              Estado de la Fase de Grupos
             </v-card-title>
             <v-card-text>
-              <v-row>
-                <v-col cols="12" md="3">
-                  <div class="text-center">
-                    <div class="text-h4 font-weight-bold text-primary">
-                      {{ groups.length }}
+              <div v-if="!tournament.has_group_stage" class="text-center py-8">
+                <v-icon class="mb-4" color="warning" size="64">mdi-alert-circle</v-icon>
+                <h3 class="text-h6 text-grey-darken-1 mb-2">Fase de Grupos Deshabilitada</h3>
+                <p class="text-body-2 text-grey-darken-1">
+                  Este torneo no tiene fase de grupos habilitada. Solo tiene fase eliminatoria.
+                </p>
+              </div>
+              <div v-else-if="groups.length === 0" class="text-center py-8">
+                <v-icon class="mb-4" color="info" size="64">mdi-account-group-outline</v-icon>
+                <h3 class="text-h6 text-grey-darken-1 mb-2">No hay grupos generados</h3>
+                <p class="text-body-2 text-grey-darken-1 mb-4">
+                  Los grupos aún no han sido generados. Haz clic en "Generar Grupos" para comenzar.
+                </p>
+                <v-btn
+                  color="success"
+                  :loading="generating"
+                  prepend-icon="mdi-account-group"
+                  rounded="xl"
+                  variant="elevated"
+                  @click="configureGroups"
+                >
+                  Generar Grupos
+                </v-btn>
+              </div>
+              <div v-else>
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <div class="text-center">
+                      <div class="text-h4 font-weight-bold text-primary">
+                        {{ groups.length }}
+                      </div>
+                      <div class="text-caption text-grey-darken-1">Grupos</div>
                     </div>
-                    <div class="text-caption text-grey-darken-1">Grupos</div>
-                  </div>
-                </v-col>
-                <v-col cols="12" md="3">
-                  <div class="text-center">
-                    <div class="text-h4 font-weight-bold text-success">
-                      {{ matchesPlayed }}
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <div class="text-center">
+                      <div class="text-h4 font-weight-bold text-success">
+                        {{ matchesPlayed }}
+                      </div>
+                      <div class="text-caption text-grey-darken-1">Partidos Jugados</div>
                     </div>
-                    <div class="text-caption text-grey-darken-1">Partidos Jugados</div>
-                  </div>
-                </v-col>
-                <v-col cols="12" md="3">
-                  <div class="text-center">
-                    <div class="text-h4 font-weight-bold text-warning">
-                      {{ totalMatches }}
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <div class="text-center">
+                      <div class="text-h4 font-weight-bold text-warning">
+                        {{ totalMatches }}
+                      </div>
+                      <div class="text-caption text-grey-darken-1">Total Partidos</div>
                     </div>
-                    <div class="text-caption text-grey-darken-1">Total Partidos</div>
-                  </div>
-                </v-col>
-                <v-col cols="12" md="3">
-                  <div class="text-center">
-                    <div class="text-h4 font-weight-bold text-info">
-                      {{ qualifiedTeams.total_qualified }}
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <div class="text-center">
+                      <div class="text-h4 font-weight-bold text-info">
+                        {{ qualifiedTeams.total_qualified }}
+                      </div>
+                      <div class="text-caption text-grey-darken-1">Equipos Clasificados</div>
                     </div>
-                    <div class="text-caption text-grey-darken-1">Equipos Clasificados</div>
+                  </v-col>
+                </v-row>
+                <div class="mt-4">
+                  <div class="d-flex align-center justify-space-between mb-2">
+                    <span class="text-body-2">Progreso general</span>
+                    <span class="text-body-2 font-weight-medium">{{ progressPercentage }}%</span>
                   </div>
-                </v-col>
-              </v-row>
-              <div class="mt-4">
-                <div class="d-flex align-center justify-space-between mb-2">
-                  <span class="text-body-2">Progreso general</span>
-                  <span class="text-body-2 font-weight-medium">{{ progressPercentage }}%</span>
+                  <v-progress-linear
+                    color="primary"
+                    height="8"
+                    :model-value="progressPercentage"
+                    rounded
+                  />
                 </div>
-                <v-progress-linear
-                  color="primary"
-                  height="8"
-                  :model-value="progressPercentage"
-                  rounded
-                />
               </div>
             </v-card-text>
           </v-card>
@@ -173,8 +210,8 @@
                               <div class="d-flex align-center mb-2">
                                 <v-avatar class="mr-3" size="40">
                                   <v-img
-                                    v-if="team.assigned_team?.logo"
-                                    :src="team.assigned_team.logo"
+                                    v-if="team.assigned_team?.logo_url"
+                                    :src="team.assigned_team.logo_url"
                                   />
                                   <v-icon v-else>mdi-shield</v-icon>
                                 </v-avatar>
@@ -196,16 +233,12 @@
                                     size="small"
                                     variant="outlined"
                                   >
-                                    <v-avatar v-if="player.avatar" left size="16">
-                                      <v-img :src="player.avatar" />
+                                    <v-avatar v-if="player.avatar_url" left size="16">
+                                      <v-img :src="player.avatar_url" />
                                     </v-avatar>
-                                    <v-icon v-else left size="16">mdi-account</v-icon>
-                                    {{ player.display_name || player.name || 'Sin nombre' }}
+                                    {{ player.display_name }}
                                   </v-chip>
                                 </div>
-                              </div>
-                              <div v-else class="text-caption text-grey-darken-1">
-                                Sin participantes registrados
                               </div>
                             </v-card-text>
                           </v-card>
@@ -220,42 +253,16 @@
         </v-col>
       </v-row>
 
-      <!-- Empty state -->
-      <v-row v-else>
-        <v-col cols="12">
-          <v-card class="text-center py-8 bg-white" variant="outlined">
-            <v-icon class="mb-4" color="grey-lighten-1" size="64">
-              mdi-account-group
-            </v-icon>
-            <h3 class="text-h6 text-grey-darken-1 mb-2">
-              No hay grupos generados
-            </h3>
-            <p class="text-body-2 text-grey-darken-1 mb-4">
-              Genera los grupos para comenzar la fase de grupos del torneo.
-            </p>
-            <v-btn
-              color="primary"
-              prepend-icon="mdi-account-group"
-              rounded="xl"
-              variant="elevated"
-              @click="configureGroups"
-            >
-              Generar Grupos
-            </v-btn>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Qualified teams -->
-      <v-row v-if="qualifiedTeams.total_qualified > 0" class="mt-6">
+      <!-- Qualified teams section -->
+      <v-row v-if="allQualifiedTeams.length > 0" class="mt-6">
         <v-col cols="12">
           <v-card class="bg-white" variant="outlined">
             <v-card-title class="text-h6">
               <v-icon start>mdi-trophy</v-icon>
-              Equipos Clasificados ({{ qualifiedTeams.total_qualified }})
+              Equipos Clasificados para Eliminatoria
             </v-card-title>
             <v-card-text>
-              <div class="d-flex flex-wrap gap-3">
+              <div class="qualified-teams-grid">
                 <v-card
                   v-for="team in allQualifiedTeams"
                   :key="team.team_entry.id"
@@ -264,25 +271,31 @@
                   variant="outlined"
                 >
                   <v-card-text class="pa-3">
-                    <div class="d-flex align-center">
-                      <v-avatar class="mr-3" size="40">
-                        <v-img
-                          v-if="team.team_entry.assigned_team?.logo"
-                          :src="team.team_entry.assigned_team.logo"
-                        />
-                        <v-icon v-else>mdi-shield</v-icon>
-                      </v-avatar>
-                      <div>
-                        <div class="font-weight-medium">
-                          {{ team.team_entry.assigned_team?.name || `Equipo ${team.team_entry.id}` }}
-                        </div>
-                        <div class="text-caption text-grey-darken-1">
-                          {{ getQualificationTypeText(team.qualification_type) }}
-                        </div>
-                        <div class="text-caption">
-                          Grupo {{ team.group_code }}
+                    <div class="d-flex align-center justify-space-between">
+                      <div class="d-flex align-center">
+                        <v-avatar class="mr-3" size="32">
+                          <v-img
+                            v-if="team.team_entry.assigned_team?.logo_url"
+                            :src="team.team_entry.assigned_team.logo_url"
+                          />
+                          <v-icon v-else size="small">mdi-shield</v-icon>
+                        </v-avatar>
+                        <div>
+                          <div class="font-weight-medium">
+                            {{ team.team_entry.assigned_team?.name || `Equipo ${team.team_entry.id}` }}
+                          </div>
+                          <div class="text-caption text-grey-darken-1">
+                            {{ getQualificationTypeText(team.qualification_type) }}
+                          </div>
                         </div>
                       </div>
+                      <v-chip
+                        :color="getQualificationColor(team.qualification_type)"
+                        size="small"
+                        variant="outlined"
+                      >
+                        {{ team.group_code }}
+                      </v-chip>
                     </div>
                   </v-card-text>
                 </v-card>
@@ -292,14 +305,14 @@
         </v-col>
       </v-row>
     </div>
-  </v-container>
 
-  <!-- Dialog para registrar/editar resultado -->
-  <MatchResultForm
-    v-model="showMatchDialog"
-    :match="selectedMatch"
-    @save-result="saveMatchResult"
-  />
+    <!-- Match result dialog -->
+    <MatchResultForm
+      v-model="showMatchDialog"
+      :match="selectedMatch"
+      @save-result="saveMatchResult"
+    />
+  </v-container>
 </template>
 
 <script setup>
@@ -337,11 +350,13 @@
 
   // Computed
   const matchesPlayed = computed(() => {
-    return matches.value.filter(match => match.played).length
+    const groupMatches = matches.value.filter(match => match.stage === 'group')
+    return groupMatches.filter(match => match.played).length
   })
 
   const totalMatches = computed(() => {
-    return matches.value.length
+    const groupMatches = matches.value.filter(match => match.stage === 'group')
+    return groupMatches.length
   })
 
   const progressPercentage = computed(() => {
@@ -372,18 +387,21 @@
       const response = await tournamentAPI.getTournament(tournamentId)
       tournament.value = response.data
 
-      // Cargar partidos del torneo
-      await loadTournamentMatches(tournamentId)
+      // Solo cargar datos de grupos si el torneo tiene fase de grupos habilitada
+      if (tournament.value.has_group_stage) {
+        // Cargar partidos del torneo
+        await loadTournamentMatches(tournamentId)
 
-      // Cargar clasificaciones de grupos
-      await loadGroupStandings(tournamentId)
+        // Cargar clasificaciones de grupos
+        await loadGroupStandings(tournamentId)
 
-      // Cargar equipos clasificados
-      await loadQualifiedTeams(tournamentId)
+        // Cargar equipos clasificados
+        await loadQualifiedTeams(tournamentId)
 
-      // Establecer la primera pestaña activa si hay grupos
-      if (groups.value.length > 0) {
-        activeGroupTab.value = groups.value[0].code
+        // Establecer la primera pestaña activa si hay grupos
+        if (groups.value.length > 0) {
+          activeGroupTab.value = groups.value[0].code
+        }
       }
     } catch (error_) {
       const errorInfo = handleApiError(error_)
@@ -399,7 +417,7 @@
   const loadTournamentMatches = async tournamentId => {
     try {
       const matchesResponse = await tournamentAPI.getTournamentMatches(tournamentId)
-      matches.value = matchesResponse.data?.matches || []
+      matches.value = matchesResponse.data || []
 
       // Organizar partidos por grupos
       organizeGroupsFromMatches()
@@ -413,8 +431,8 @@
   // Cargar clasificaciones de grupos
   const loadGroupStandings = async tournamentId => {
     try {
-      const standingsResponse = await tournamentAPI.getGroupStandings(tournamentId)
-      groupStandings.value = standingsResponse.data
+      const standingsResponse = await tournamentAPI.getStandings(tournamentId, 'group')
+      groupStandings.value = standingsResponse.data || {}
 
       // Actualizar grupos con clasificaciones
       updateGroupsWithStandings()
@@ -428,7 +446,12 @@
   const loadQualifiedTeams = async tournamentId => {
     try {
       const qualifiedResponse = await tournamentAPI.getQualifiedTeams(tournamentId)
-      qualifiedTeams.value = qualifiedResponse.data
+      qualifiedTeams.value = qualifiedResponse.data || {
+        group_winners: [],
+        group_runners_up: [],
+        best_third_place: [],
+        total_qualified: 0,
+      }
     } catch (error) {
       console.error('Error al cargar equipos clasificados:', error)
       qualifiedTeams.value = {
@@ -453,6 +476,8 @@
     const groupMap = {}
     for (const match of groupMatches) {
       const groupCode = match.group_code
+      if (!groupCode) continue
+
       if (!groupMap[groupCode]) {
         groupMap[groupCode] = {
           code: groupCode,
@@ -537,6 +562,15 @@
     return typeMap[type] || 'Clasificado'
   }
 
+  const getQualificationColor = type => {
+    const colorMap = {
+      group_winner: 'success',
+      group_runner_up: 'warning',
+      best_third_place: 'info',
+    }
+    return colorMap[type] || 'primary'
+  }
+
   // Navegación
   const goBack = () => {
     router.push(`/tournaments/${route.params.id}`)
@@ -570,11 +604,13 @@
     }
   }
 
+  // Generar fase eliminatoria
   const generateKnockoutStage = async () => {
     try {
       generatingKnockout.value = true
 
-      await tournamentAPI.generateKnockoutStage(tournament.value.id)
+      // Usar la función unificada knockoutStage
+      await tournamentAPI.knockoutStage(tournament.value.id, {})
 
       appStore.showSuccess('Fase eliminatoria generada exitosamente')
       router.push(`/tournaments/${tournament.value.id}/bracket`)
@@ -597,18 +633,22 @@
       const goals = {}
       const participants = selectedMatch.value.participants || []
 
-      if (participants.length >= 2) {
-        const team1Id = participants[0].id
-        const team2Id = participants[1].id
-
-        goals[team1Id] = result.team1Score
-        goals[team2Id] = result.team2Score
+      // Construir el objeto goals con los IDs de los participantes
+      for (const participant of participants) {
+        if (participant.id === result.team1Id) {
+          goals[participant.id] = result.team1Score
+        } else if (participant.id === result.team2Id) {
+          goals[participant.id] = result.team2Score
+        }
       }
 
       await matchAPI.saveMatchResult(selectedMatch.value.id, { goals })
+
+      // Recargar datos
       await loadTournament()
 
       appStore.showSuccess('Resultado guardado exitosamente')
+      showMatchDialog.value = false
     } catch (error) {
       const errorInfo = handleApiError(error)
       appStore.showError(`Error al guardar resultado: ${errorInfo.message}`)
@@ -623,62 +663,49 @@
 </script>
 
 <style scoped>
-.page-title {
-  color: white !important;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.page-subtitle {
-  color: #f3f2e5 !important;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+.tournament-groups-overview {
+  width: 100%;
 }
 
 .teams-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
 }
 
 .team-card {
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
 }
 
 .team-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Estilos para equipos clasificados */
+.qualified-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
 .qualified-team-card {
-  transition: transform 0.2s, box-shadow 0.2s;
-  min-width: 200px;
+  transition: all 0.3s ease;
 }
 
 .qualified-team-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .qualified-team-card.winner {
-  border-left: 4px solid gold;
+  border-left: 4px solid #4caf50;
 }
 
 .qualified-team-card.runner-up {
-  border-left: 4px solid silver;
+  border-left: 4px solid #ff9800;
 }
 
 .qualified-team-card.third-place {
-  border-left: 4px solid #cd7f32;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .qualified-team-card {
-    min-width: 100%;
-  }
-
-  .teams-grid {
-    grid-template-columns: 1fr;
-  }
+  border-left: 4px solid #2196f3;
 }
 </style>

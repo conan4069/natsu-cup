@@ -32,7 +32,7 @@
               <div class="d-flex align-center">
                 <v-avatar class="mr-2" size="24">
                   <v-img
-                    v-if="standing.team_entry.assigned_team?.logo"
+                    v-if="standing.team_entry.assigned_team?.logo && standing.team_entry.assigned_team.logo !== 'null'"
                     :src="standing.team_entry.assigned_team.logo"
                   />
                   <v-icon v-else size="16">mdi-shield</v-icon>

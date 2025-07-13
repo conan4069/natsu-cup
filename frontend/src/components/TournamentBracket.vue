@@ -1,5 +1,5 @@
 <template>
-  <div class="tournament-bracket">
+  <div class="tournament-bracket bg-white py-4 px-3">
     <!-- Header del bracket -->
     <div class="bracket-header mb-6">
       <h2 class="text-h5 font-weight-bold mb-2">{{ tournament?.name }} - Fase Eliminatoria</h2>
@@ -16,21 +16,36 @@
       </div>
     </div>
 
-    <!-- Ganadores destacados -->
-    <div v-if="winners.length > 0" class="winners-section mb-6">
-      <h3 class="text-h6 font-weight-bold mb-4">Ganadores Destacados</h3>
-      <div class="winners-grid">
-        <WinnerCard
-          v-for="(winner, index) in winners"
-          :key="winner.id"
-          :is-champion="index === 0"
-          :winner="winner"
-        />
-      </div>
+    <!-- Estado vacío -->
+    <div v-if="showEmptyState" class="empty-state text-center py-8">
+      <v-icon class="mb-4" color="grey-lighten-1" size="64">
+        mdi-trophy-outline
+      </v-icon>
+      <h3 class="text-h6 text-grey-darken-1 mb-2">
+        No hay eliminatorias generadas
+      </h3>
+      <p class="text-body-2 text-grey-darken-1 mb-4">
+        Las eliminatorias aparecerán aquí cuando se generen desde la fase de grupos.
+      </p>
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-trophy"
+        rounded="xl"
+        variant="elevated"
+        @click="generateQuarterfinals"
+      >
+        Generar Eliminatorias
+      </v-btn>
+    </div>
+
+    <!-- Loading state -->
+    <div v-else-if="generating" class="text-center py-8">
+      <v-progress-circular color="primary" indeterminate size="64" />
+      <p class="text-body-2 text-grey-darken-1 mt-4">Generando eliminatorias...</p>
     </div>
 
     <!-- Contenido del bracket -->
-    <div class="bracket-container">
+    <div v-else-if="hasKnockoutMatches" class="bracket-container">
       <div class="bracket-grid">
         <!-- Cuartos de final -->
         <div v-if="showQuarterfinals" class="bracket-round quarterfinals">
@@ -61,15 +76,22 @@
                   <div class="team-info">
                     <v-avatar class="mr-3" size="32">
                       <v-img
-                        v-if="match.team1?.logo"
+                        v-if="getTeamLogo(match.team1)"
                         alt="Logo"
-                        :src="match.team1.logo"
+                        :src="getTeamLogo(match.team1)"
                       />
                       <v-icon v-else size="20">mdi-shield</v-icon>
                     </v-avatar>
-                    <span class="team-name">
-                      {{ match.team1?.name || match.placeholder_team1 || 'TBD' }}
-                    </span>
+                    <div class="team-details">
+                      <span class="team-name">
+                        {{ getTeamName(match.team1) }}
+                      </span>
+                      <div v-if="getTeamPlayers(match.team1)?.length" class="team-players">
+                        <span class="text-caption text-grey-darken-1">
+                          {{ getTeamPlayers(match.team1).map(p => p.display_name).join(', ') }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div v-if="match.played" class="team-score">
                     {{ match.team1_score || 0 }}
@@ -85,15 +107,22 @@
                   <div class="team-info">
                     <v-avatar class="mr-3" size="32">
                       <v-img
-                        v-if="match.team2?.logo"
+                        v-if="getTeamLogo(match.team2)"
                         alt="Logo"
-                        :src="match.team2.logo"
+                        :src="getTeamLogo(match.team2)"
                       />
                       <v-icon v-else size="20">mdi-shield</v-icon>
                     </v-avatar>
-                    <span class="team-name">
-                      {{ match.team2?.name || match.placeholder_team2 || 'TBD' }}
-                    </span>
+                    <div class="team-details">
+                      <span class="team-name">
+                        {{ getTeamName(match.team2) }}
+                      </span>
+                      <div v-if="getTeamPlayers(match.team2)?.length" class="team-players">
+                        <span class="text-caption text-grey-darken-1">
+                          {{ getTeamPlayers(match.team2).map(p => p.display_name).join(', ') }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div v-if="match.played" class="team-score">
                     {{ match.team2_score || 0 }}
@@ -158,15 +187,22 @@
                   <div class="team-info">
                     <v-avatar class="mr-3" size="32">
                       <v-img
-                        v-if="match.team1?.logo"
+                        v-if="getTeamLogo(match.team1)"
                         alt="Logo"
-                        :src="match.team1.logo"
+                        :src="getTeamLogo(match.team1)"
                       />
                       <v-icon v-else size="20">mdi-shield</v-icon>
                     </v-avatar>
-                    <span class="team-name">
-                      {{ match.team1?.name || match.placeholder_team1 || 'TBD' }}
-                    </span>
+                    <div class="team-details">
+                      <span class="team-name">
+                        {{ getTeamName(match.team1) }}
+                      </span>
+                      <div v-if="getTeamPlayers(match.team1)?.length" class="team-players">
+                        <span class="text-caption text-grey-darken-1">
+                          {{ getTeamPlayers(match.team1).map(p => p.display_name).join(', ') }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div v-if="match.played" class="team-score">
                     {{ match.team1_score || 0 }}
@@ -182,15 +218,22 @@
                   <div class="team-info">
                     <v-avatar class="mr-3" size="32">
                       <v-img
-                        v-if="match.team2?.logo"
+                        v-if="getTeamLogo(match.team2)"
                         alt="Logo"
-                        :src="match.team2.logo"
+                        :src="getTeamLogo(match.team2)"
                       />
                       <v-icon v-else size="20">mdi-shield</v-icon>
                     </v-avatar>
-                    <span class="team-name">
-                      {{ match.team2?.name || match.placeholder_team2 || 'TBD' }}
-                    </span>
+                    <div class="team-details">
+                      <span class="team-name">
+                        {{ getTeamName(match.team2) }}
+                      </span>
+                      <div v-if="getTeamPlayers(match.team2)?.length" class="team-players">
+                        <span class="text-caption text-grey-darken-1">
+                          {{ getTeamPlayers(match.team2).map(p => p.display_name).join(', ') }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div v-if="match.played" class="team-score">
                     {{ match.team2_score || 0 }}
@@ -255,15 +298,22 @@
                   <div class="team-info">
                     <v-avatar class="mr-3" size="32">
                       <v-img
-                        v-if="match.team1?.logo"
+                        v-if="getTeamLogo(match.team1)"
                         alt="Logo"
-                        :src="match.team1.logo"
+                        :src="getTeamLogo(match.team1)"
                       />
                       <v-icon v-else size="20">mdi-shield</v-icon>
                     </v-avatar>
-                    <span class="team-name">
-                      {{ match.team1?.name || match.placeholder_team1 || 'TBD' }}
-                    </span>
+                    <div class="team-details">
+                      <span class="team-name">
+                        {{ getTeamName(match.team1) }}
+                      </span>
+                      <div v-if="getTeamPlayers(match.team1)?.length" class="team-players">
+                        <span class="text-caption text-grey-darken-1">
+                          {{ getTeamPlayers(match.team1).map(p => p.display_name).join(', ') }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div v-if="match.played" class="team-score">
                     {{ match.team1_score || 0 }}
@@ -279,15 +329,22 @@
                   <div class="team-info">
                     <v-avatar class="mr-3" size="32">
                       <v-img
-                        v-if="match.team2?.logo"
+                        v-if="getTeamLogo(match.team2)"
                         alt="Logo"
-                        :src="match.team2.logo"
+                        :src="getTeamLogo(match.team2)"
                       />
                       <v-icon v-else size="20">mdi-shield</v-icon>
                     </v-avatar>
-                    <span class="team-name">
-                      {{ match.team2?.name || match.placeholder_team2 || 'TBD' }}
-                    </span>
+                    <div class="team-details">
+                      <span class="team-name">
+                        {{ getTeamName(match.team2) }}
+                      </span>
+                      <div v-if="getTeamPlayers(match.team2)?.length" class="team-players">
+                        <span class="text-caption text-grey-darken-1">
+                          {{ getTeamPlayers(match.team2).map(p => p.display_name).join(', ') }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div v-if="match.played" class="team-score">
                     {{ match.team2_score || 0 }}
@@ -364,7 +421,7 @@
 </template>
 
 <script setup>
-  import { computed, ref, watch } from 'vue'
+  import { computed, ref } from 'vue'
 
   // Props
   const props = defineProps({
@@ -395,7 +452,7 @@
     { label: 'Final', value: 'final' },
   ]
 
-  // Computed
+  // Computed corregidos
   const quarterfinalMatches = computed(() => {
     return props.matches.filter(match => match.stage === 'quarterfinal')
   })
@@ -406,6 +463,86 @@
 
   const finalMatches = computed(() => {
     return props.matches.filter(match => match.stage === 'final')
+  })
+
+  const totalMatches = computed(() => {
+    return quarterfinalMatches.value.length + semifinalMatches.value.length + finalMatches.value.length
+  })
+
+  const playedMatches = computed(() => {
+    return props.matches.filter(match => match.played).length
+  })
+
+  const progressPercentage = computed(() => {
+    if (totalMatches.value === 0) return 0
+    return Math.min((playedMatches.value / totalMatches.value) * 100, 100) // Limitar a 100%
+  })
+
+  const quarterfinalsCompleted = computed(() => {
+    return quarterfinalMatches.value.length > 0
+      && quarterfinalMatches.value.every(match => match.played)
+  })
+
+  const semifinalsCompleted = computed(() => {
+    return semifinalMatches.value.length > 0
+      && semifinalMatches.value.every(match => match.played)
+  })
+
+  const finalCompleted = computed(() => {
+    return finalMatches.value.length > 0
+      && finalMatches.value.every(match => match.played)
+  })
+
+  // Determinar estado del torneo
+  const tournamentStatus = computed(() => {
+    if (!props.tournament) return 'unknown'
+
+    const hasGroups = props.tournament.has_group_stage
+    const hasKnockout = props.tournament.has_knockout
+    const hasLeague = props.tournament.competition_type in ['league', 'hybrid']
+
+    // Verificar si todos los partidos están completados
+    const allMatchesCompleted = props.matches.length > 0 && props.matches.every(match => match.played)
+
+    if (hasGroups && hasKnockout) {
+      // Torneo con grupos + eliminatorias
+      if (finalCompleted.value) return 'completed'
+      else if (semifinalsCompleted.value) return 'final_stage'
+      else if (quarterfinalsCompleted.value) return 'semifinal_stage'
+      else return 'group_stage'
+    } else if (hasLeague && hasKnockout) {
+      // Liga + playoffs
+      if (finalCompleted.value) return 'completed'
+      else if (semifinalsCompleted.value) return 'final_stage'
+      else if (quarterfinalsCompleted.value) return 'semifinal_stage'
+      else return 'league_stage'
+    } else if (hasLeague) {
+      // Solo liga
+      return allMatchesCompleted ? 'completed' : 'league_stage'
+    } else if (hasKnockout) {
+      // Solo eliminatorias
+      if (finalCompleted.value) return 'completed'
+      else if (semifinalsCompleted.value) return 'final_stage'
+      else if (quarterfinalsCompleted.value) return 'semifinal_stage'
+      else return 'knockout_stage'
+    }
+
+    return 'unknown'
+  })
+
+  const statusText = computed(() => {
+    const status = tournamentStatus.value
+    const statusMap = {
+      completed: 'Completado',
+      final_stage: 'Final',
+      semifinal_stage: 'Semifinales',
+      quarterfinal_stage: 'Cuartos de Final',
+      group_stage: 'Fase de Grupos',
+      league_stage: 'Fase de Liga',
+      knockout_stage: 'Eliminatorias',
+      unknown: 'Desconocido',
+    }
+    return statusMap[status] || 'Desconocido'
   })
 
   const showQuarterfinals = computed(() => {
@@ -439,6 +576,15 @@
       && semifinalMatches.value.every(match => match.played)
   })
 
+  // Agregar computed para verificar si hay eliminatorias
+  const hasKnockoutMatches = computed(() => {
+    return props.matches.length > 0
+  })
+
+  const showEmptyState = computed(() => {
+    return !hasKnockoutMatches.value && !props.generating
+  })
+
   // Métodos
   const setCurrentStage = stage => {
     currentStage.value = stage
@@ -462,6 +608,32 @@
 
   const viewMatch = match => {
     emit('view-match', match)
+  }
+
+  // Helper functions for new template - CORREGIDO
+  const getTeamName = team => {
+    return team?.name || team?.display_name || team?.team?.name || 'Por definir'
+  }
+
+  const getTeamLogo = team => {
+    // Si no hay logo del equipo, usar un logo por defecto
+    const logoUrl = team?.logo_url || team?.logo || team?.team?.logo_url || team?.team?.logo
+    if (logoUrl) {
+      return logoUrl
+    }
+
+    // Logo por defecto basado en el nombre del equipo
+    const teamName = getTeamName(team)
+    if (teamName && teamName !== 'Por definir') {
+      // Puedes usar un servicio como DiceBear para generar avatares basados en el nombre
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(teamName)}&backgroundColor=1f2937&textColor=ffffff`
+    }
+
+    return null
+  }
+
+  const getTeamPlayers = team => {
+    return team?.players || team?.team?.players || []
   }
 </script>
 
@@ -495,6 +667,10 @@
   margin-bottom: 20px;
   font-weight: bold;
   color: var(--v-primary-base);
+  background-color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .matches-container {
@@ -645,5 +821,14 @@
     flex-direction: column;
     align-items: center;
   }
+}
+
+.team-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.team-players {
+  margin-top: 2px;
 }
 </style>

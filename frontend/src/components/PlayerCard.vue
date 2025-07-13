@@ -9,7 +9,7 @@
       <!-- Avatar del jugador -->
       <v-avatar class="mb-3" size="80">
         <v-img
-          v-if="player.avatar"
+          v-if="player.avatar && player.avatar !== 'null'"
           alt="Avatar del jugador"
           cover
           :src="player.avatar"

@@ -57,6 +57,18 @@
           <!-- Tab de información del torneo -->
           <v-window-item value="tournament">
             <v-card-text class="pa-6">
+              <!-- Alerta cuando hay partidos generados -->
+              <v-alert
+                v-if="tournamentHasMatches"
+                class="mb-4"
+                type="warning"
+                variant="tonal"
+                rounded="xl"
+              >
+                <strong>Advertencia:</strong> No se pueden editar los datos básicos del torneo porque ya se han generado partidos.
+                Solo se pueden modificar las reglas del torneo.
+              </v-alert>
+
               <v-row>
                 <v-col cols="12" md="8">
                   <v-card variant="outlined" rounded="xl">
@@ -158,16 +170,40 @@
           <!-- Tab de configuración de equipos -->
           <v-window-item value="teams">
             <v-card-text class="pa-6">
-              <TournamentTeamConfiguration
-                :participants="participants"
-                :teams="teams"
-                :tournament-format="tournamentData.format"
-                :tournament-id="route.params.id"
-                @format-change="updateTournamentFormat"
-                @update:team-assignments="updateTeamAssignments"
-                @update:team-entries="updateTeamEntries"
-                @update:teams="updateTeams"
-              />
+              <v-alert
+                v-if="tournamentHasMatches"
+                class="mb-4"
+                type="warning"
+                variant="tonal"
+                rounded="xl"
+              >
+                <strong>Advertencia:</strong> No se puede cambiar la configuración de equipos porque ya se han generado partidos.
+              </v-alert>
+
+              <div v-if="!tournamentHasMatches">
+                <TournamentTeamConfiguration
+                  :participants="participants"
+                  :teams="teams"
+                  :tournament-format="tournamentData.format"
+                  :tournament-id="route.params.id"
+                  @format-change="updateTournamentFormat"
+                  @update:team-assignments="updateTeamAssignments"
+                  @update:team-entries="updateTeamEntries"
+                  @update:teams="updateTeams"
+                />
+              </div>
+              <div v-else>
+                <v-card variant="outlined" rounded="xl">
+                  <v-card-title class="text-subtitle-1">
+                    Configuración de equipos actual (solo lectura)
+                  </v-card-title>
+                  <v-card-text>
+                    <p class="text-body-2 text-grey-darken-1">
+                      La configuración de equipos no se puede modificar porque ya se han generado partidos.
+                    </p>
+                  </v-card-text>
+                </v-card>
+              </div>
             </v-card-text>
           </v-window-item>
         </v-window>
@@ -248,7 +284,19 @@
 
   // Computed
   const canSaveChanges = computed(() => {
+    // Si hay partidos generados, solo permitir guardar si solo se modificaron las reglas
+    if (tournamentHasMatches.value) {
+      // Solo permitir guardar si solo se modificaron las reglas
+      return formValid.value && onlyRulesChanged.value
+    }
     return formValid.value && participants.value.length > 1
+  })
+
+  const onlyRulesChanged = computed(() => {
+    // Comparar si solo cambiaron las reglas
+    const originalRules = tournament.value?.rules || ''
+    const currentRules = tournamentData.value.rules || ''
+    return originalRules !== currentRules
   })
 
   const showLeagueFields = computed(() => {
@@ -374,16 +422,23 @@
   const saveTournament = async () => {
     saving.value = true
     try {
-      // Actualizar datos del torneo
-      const formData = tournamentFormRef.value.getFormData()
-      await tournamentAPI.updateTournament(tournament.value.id, formData)
+      // Si hay partidos generados, solo actualizar las reglas
+      if (tournamentHasMatches.value) {
+        const formData = {
+          rules: tournamentData.value.rules
+        }
+        await tournamentAPI.updateTournament(tournament.value.id, formData)
+        appStore.showSuccess('Reglas del torneo actualizadas exitosamente')
+      } else {
+        // Actualizar datos completos del torneo
+        const formData = tournamentFormRef.value.getFormData()
+        await tournamentAPI.updateTournament(tournament.value.id, formData)
 
-      // Si no hay partidos generados, actualizar participantes
-      if (!tournamentHasMatches.value) {
+        // Actualizar participantes
         await updateTournamentParticipants()
+        appStore.showSuccess('Torneo actualizado exitosamente')
       }
 
-      appStore.showSuccess('Torneo actualizado exitosamente')
       router.push(`/tournaments/${tournament.value.id}`)
     } catch (error_) {
       const errorInfo = handleApiError(error_)

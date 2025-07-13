@@ -21,9 +21,9 @@
           <div class="d-flex align-center mb-4">
             <v-btn
               class="mr-4"
+              color="white"
               icon="mdi-arrow-left"
               variant="text"
-              color="white"
               @click="goBack"
             />
             <div class="flex-grow-1">
@@ -34,6 +34,7 @@
             </div>
             <div class="d-flex justify-center" style="gap: 10px;">
               <v-btn
+                v-if="!tournamentHasMatches"
                 color="blue-darken-2"
                 prepend-icon="mdi-pencil"
                 rounded="xl"
@@ -41,6 +42,16 @@
                 @click="editTournament"
               >
                 Editar
+              </v-btn>
+              <v-btn
+                v-else
+                color="blue-darken-2"
+                prepend-icon="mdi-pencil"
+                rounded="xl"
+                variant="outlined"
+                @click="editTournament"
+              >
+                Editar Reglas
               </v-btn>
               <v-btn
                 color="red-darken-2"
@@ -193,6 +204,9 @@
       || tournament.value?.competition_type === 'hybrid'
   })
 
+  // Agregar la verificación de partidos
+  const tournamentHasMatches = ref(false)
+
   // Cargar torneo
   const loadTournament = async () => {
     const tournamentId = route.params.id
@@ -203,6 +217,14 @@
     try {
       const response = await tournamentAPI.getTournament(tournamentId)
       tournament.value = response.data
+
+      // Verificar si hay partidos generados
+      try {
+        const matchesResponse = await tournamentAPI.getTournamentMatches(tournamentId)
+        tournamentHasMatches.value = matchesResponse.data.length > 0
+      } catch {
+        tournamentHasMatches.value = false
+      }
     } catch (error_) {
       const errorInfo = handleApiError(error_)
       error.value = errorInfo.message

@@ -13,7 +13,7 @@
             <div class="team-display">
               <v-avatar class="mr-3" size="48">
                 <v-img
-                  v-if="getTeam(0)?.assigned_team?.logo"
+                  v-if="getTeam(0)?.assigned_team?.logo && getTeam(0).assigned_team.logo !== 'null'"
                   alt="Logo equipo 1"
                   :src="getTeam(0).assigned_team.logo"
                 />
@@ -32,9 +32,10 @@
                   size="small"
                   variant="outlined"
                 >
-                  <v-avatar v-if="player.avatar" left size="20">
+                  <v-avatar v-if="player.avatar && player.avatar !== 'null'" left size="20">
                     <v-img :src="player.avatar" />
                   </v-avatar>
+                  <v-icon v-else left size="20">mdi-account</v-icon>
                   {{ player.display_name }}
                 </v-chip>
               </div>
@@ -49,7 +50,7 @@
               </span>
               <v-avatar class="ml-3" size="48">
                 <v-img
-                  v-if="getTeam(1)?.assigned_team?.logo"
+                  v-if="getTeam(1)?.assigned_team?.logo && getTeam(1).assigned_team.logo !== 'null'"
                   alt="Logo equipo 2"
                   :src="getTeam(1).assigned_team.logo"
                 />
@@ -65,9 +66,10 @@
                   size="small"
                   variant="outlined"
                 >
-                  <v-avatar v-if="player.avatar" left size="20">
+                  <v-avatar v-if="player.avatar && player.avatar !== 'null'" left size="20">
                     <v-img :src="player.avatar" />
                   </v-avatar>
+                  <v-icon v-else left size="20">mdi-account</v-icon>
                   {{ player.display_name }}
                 </v-chip>
               </div>
@@ -87,6 +89,7 @@
                   class="score-field"
                   density="comfortable"
                   min="0"
+                  placeholder="0"
                   rounded="xl"
                   :rules="scoreRules"
                   type="number"
@@ -107,6 +110,7 @@
                   class="score-field"
                   density="comfortable"
                   min="0"
+                  placeholder="0"
                   rounded="xl"
                   :rules="scoreRules"
                   type="number"
@@ -180,8 +184,8 @@
   const emit = defineEmits(['update:modelValue', 'save-result'])
 
   // Estado reactivo
-  const team1Score = ref(0)
-  const team2Score = ref(0)
+  const team1Score = ref(null)
+  const team2Score = ref(null)
   const saving = ref(false)
 
   // Computed
@@ -195,13 +199,15 @@
   })
 
   const scoreRules = [
-    v => (v !== null && v !== undefined) || 'El marcador es requerido',
+    v => (v !== null && v !== undefined && v !== '') || 'El marcador es requerido',
     v => v >= 0 || 'El marcador no puede ser negativo',
     v => v <= 50 || 'El marcador no puede ser mayor a 50',
   ]
 
   const isValid = computed(() => {
-    return team1Score.value >= 0
+    return team1Score.value !== null
+      && team2Score.value !== null
+      && team1Score.value >= 0
       && team2Score.value >= 0
       && (team1Score.value > 0 || team2Score.value > 0)
   })
@@ -236,8 +242,8 @@
   }
 
   const resetForm = () => {
-    team1Score.value = 0
-    team2Score.value = 0
+    team1Score.value = null
+    team2Score.value = null
   }
 
   const saveResult = async () => {
@@ -245,13 +251,28 @@
 
     saving.value = true
     try {
+      const participants = props.match?.participants || []
+      const team1Id = participants[0]?.id
+      const team2Id = participants[1]?.id
+
+      console.log('Match data:', props.match)
+      console.log('Participants:', participants)
+      console.log('Team1 ID:', team1Id)
+      console.log('Team2 ID:', team2Id)
+      console.log('Team1 Score:', team1Score.value)
+      console.log('Team2 Score:', team2Score.value)
+
       const result = {
         matchId: props.match.id,
+        team1Id: team1Id,
+        team2Id: team2Id,
         team1Score: team1Score.value,
         team2Score: team2Score.value,
         winner: winner.value,
         isDraw: isDraw.value,
       }
+
+      console.log('Resultado a enviar:', result)
 
       emit('save-result', result)
       closeDialog()

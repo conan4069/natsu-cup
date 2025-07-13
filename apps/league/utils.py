@@ -275,77 +275,89 @@ def update_group_standings(tournament_id):
         # Limpiar clasificaciones actuales
         GroupStanding.objects.filter(tournament=tournament).delete()
         
-        # Crear diccionario para acumular estadísticas por grupo
-        group_standings_data = {}
+        # Crear diccionario para almacenar estadísticas por equipo
+        team_stats = {}
         
         for match in matches:
             participants = list(match.participants.all())
-            if len(participants) < 2:
+            if len(participants) != 2:
                 continue
+                
+            team1, team2 = participants
+            goals = match.goals or {}
             
-            team1_entry = participants[0]
-            team2_entry = participants[1]
-            group_code = match.group_code
+            team1_goals = goals.get(str(team1.id), 0)
+            team2_goals = goals.get(str(team2.id), 0)
             
-            if not group_code:
-                continue
-            
-            team1_goals = match.goals.get(str(team1_entry.id), 0)
-            team2_goals = match.goals.get(str(team2_entry.id), 0)
-            
-            # Inicializar datos si no existen
-            if team1_entry.id not in group_standings_data:
-                group_standings_data[team1_entry.id] = {
-                    'team_entry': team1_entry,
-                    'group_code': group_code,
-                    'matches_played': 0, 'wins': 0, 'draws': 0, 'losses': 0,
-                    'goals_for': 0, 'goals_against': 0, 'points': 0
+            # Inicializar estadísticas si no existen
+            if team1.id not in team_stats:
+                team_stats[team1.id] = {
+                    'team_entry': team1,
+                    'group_code': match.group_code,
+                    'matches_played': 0,
+                    'wins': 0,
+                    'draws': 0,
+                    'losses': 0,
+                    'goals_for': 0,
+                    'goals_against': 0,
+                    'points': 0
                 }
-            if team2_entry.id not in group_standings_data:
-                group_standings_data[team2_entry.id] = {
-                    'team_entry': team2_entry,
-                    'group_code': group_code,
-                    'matches_played': 0, 'wins': 0, 'draws': 0, 'losses': 0,
-                    'goals_for': 0, 'goals_against': 0, 'points': 0
+            
+            if team2.id not in team_stats:
+                team_stats[team2.id] = {
+                    'team_entry': team2,
+                    'group_code': match.group_code,
+                    'matches_played': 0,
+                    'wins': 0,
+                    'draws': 0,
+                    'losses': 0,
+                    'goals_for': 0,
+                    'goals_against': 0,
+                    'points': 0
                 }
             
             # Actualizar estadísticas
-            group_standings_data[team1_entry.id]['matches_played'] += 1
-            group_standings_data[team2_entry.id]['matches_played'] += 1
+            team_stats[team1.id]['matches_played'] += 1
+            team_stats[team1.id]['goals_for'] += team1_goals
+            team_stats[team1.id]['goals_against'] += team2_goals
             
-            group_standings_data[team1_entry.id]['goals_for'] += team1_goals
-            group_standings_data[team1_entry.id]['goals_against'] += team2_goals
-            group_standings_data[team2_entry.id]['goals_for'] += team2_goals
-            group_standings_data[team2_entry.id]['goals_against'] += team1_goals
+            team_stats[team2.id]['matches_played'] += 1
+            team_stats[team2.id]['goals_for'] += team2_goals
+            team_stats[team2.id]['goals_against'] += team1_goals
             
+            # Calcular resultado
             if team1_goals > team2_goals:
-                group_standings_data[team1_entry.id]['wins'] += 1
-                group_standings_data[team1_entry.id]['points'] += 3
-                group_standings_data[team2_entry.id]['losses'] += 1
-            elif team2_goals > team1_goals:
-                group_standings_data[team2_entry.id]['wins'] += 1
-                group_standings_data[team2_entry.id]['points'] += 3
-                group_standings_data[team1_entry.id]['losses'] += 1
+                team_stats[team1.id]['wins'] += 1
+                team_stats[team1.id]['points'] += 3
+                team_stats[team2.id]['losses'] += 1
+            elif team1_goals < team2_goals:
+                team_stats[team2.id]['wins'] += 1
+                team_stats[team2.id]['points'] += 3
+                team_stats[team1.id]['losses'] += 1
             else:
-                group_standings_data[team1_entry.id]['draws'] += 1
-                group_standings_data[team1_entry.id]['points'] += 1
-                group_standings_data[team2_entry.id]['draws'] += 1
-                group_standings_data[team2_entry.id]['points'] += 1
+                team_stats[team1.id]['draws'] += 1
+                team_stats[team1.id]['points'] += 1
+                team_stats[team2.id]['draws'] += 1
+                team_stats[team2.id]['points'] += 1
         
-        # Crear registros de clasificación de grupos
-        for data in group_standings_data.values():
+        # Crear registros de clasificación
+        for team_id, stats in team_stats.items():
             GroupStanding.objects.create(
                 tournament=tournament,
-                group_code=data['group_code'],
-                team_entry=data['team_entry'],
-                points=data['points'],
-                goals_for=data['goals_for'],
-                goals_against=data['goals_against'],
-                matches_played=data['matches_played'],
-                wins=data['wins'],
-                draws=data['draws'],
-                losses=data['losses']
+                group_code=stats['group_code'],
+                team_entry=stats['team_entry'],
+                points=stats['points'],
+                goals_for=stats['goals_for'],
+                goals_against=stats['goals_against'],
+                matches_played=stats['matches_played'],
+                wins=stats['wins'],
+                draws=stats['draws'],
+                losses=stats['losses']
             )
         
+        print(f"✅ Clasificaciones de grupos actualizadas para torneo {tournament.name}")
+        
     except Tournament.DoesNotExist:
-        pass 
+        print(f"❌ Torneo {tournament_id} no encontrado")
+    except Exception as e:
+        print(f"❌ Error al actualizar clasificaciones de grupos: {e}") 

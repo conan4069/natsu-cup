@@ -346,7 +346,7 @@
       matches.value = matchesResponse.data?.matches || matchesResponse.data || []
 
       // Cargar clasificación
-      const standingsResponse = await tournamentAPI.getTournamentStandings(props.tournament.id)
+      const standingsResponse = await tournamentAPI.getStandings(props.tournament.id, 'tournament')
       standings.value = standingsResponse.data || []
     } catch (error) {
       console.error('Error al cargar estadísticas:', error)

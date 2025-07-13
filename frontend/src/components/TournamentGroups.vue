@@ -84,7 +84,7 @@
                       <span class="team-position mr-3">{{ index + 1 }}</span>
                       <v-avatar class="mr-3" size="32">
                         <v-img
-                          v-if="team.logo"
+                          v-if="team.logo && team.logo !== 'null'"
                           alt="Logo"
                           :src="team.logo"
                         />
@@ -112,7 +112,7 @@
                       <div class="d-flex align-center">
                         <v-avatar class="mr-2" size="24">
                           <v-img
-                            v-if="match.team1?.logo"
+                            v-if="match.team1?.logo && match.team1.logo !== 'null'"
                             alt="Logo"
                             :src="match.team1.logo"
                           />
@@ -132,7 +132,7 @@
                         <span class="text-body-2">{{ match.team2?.name || 'TBD' }}</span>
                         <v-avatar class="ml-2" size="24">
                           <v-img
-                            v-if="match.team2?.logo"
+                            v-if="match.team2?.logo && match.team2.logo !== 'null'"
                             alt="Logo"
                             :src="match.team2.logo"
                           />
@@ -203,7 +203,7 @@
                         <div class="d-flex align-center">
                           <v-avatar class="mr-2" size="24">
                             <v-img
-                              v-if="team.logo"
+                              v-if="team.logo && team.logo !== 'null'"
                               alt="Logo"
                               :src="team.logo"
                             />
@@ -277,7 +277,7 @@
   })
 
   const sortedStandings = computed(() => {
-    return standings.value.sort((a, b) => {
+    return [...standings.value].sort((a, b) => {
       // Ordenar por puntos, luego diferencia de goles, luego goles a favor
       if (b.points !== a.points) return b.points - a.points
       const aDiff = (a.goals_for || 0) - (a.goals_against || 0)
@@ -421,13 +421,19 @@
   // Guardar resultado del partido
   const saveMatchResult = async result => {
     try {
-      await matchAPI.markMatchAsPlayed(result.matchId, {
-        played: true,
-        goals: {
-          [result.team1Id]: result.team1Score,
-          [result.team2Id]: result.team2Score,
-        },
-      })
+      console.log('Guardando resultado:', result)
+
+      const goals = {
+        [result.team1Id]: result.team1Score,
+        [result.team2Id]: result.team2Score,
+      }
+
+      console.log('Goals a enviar:', goals)
+      console.log('Match ID:', result.matchId)
+
+      await matchAPI.saveMatchResult(result.matchId, { goals })
+
+      console.log('Resultado guardado exitosamente')
 
       // Recargar grupos
       await loadGroups()

@@ -56,7 +56,7 @@
               <template #prepend>
                 <v-avatar size="40">
                   <v-img
-                    v-if="entry.assigned_team?.logo"
+                    v-if="entry.assigned_team?.logo && entry.assigned_team.logo !== 'null'"
                     alt="Logo"
                     :src="entry.assigned_team.logo"
                   />
@@ -86,7 +86,7 @@
                       size="small"
                       variant="outlined"
                     >
-                      <v-avatar v-if="player.avatar" left size="16">
+                      <v-avatar v-if="player.avatar && player.avatar !== 'null'" left size="16">
                         <v-img :src="player.avatar" />
                       </v-avatar>
                       <v-icon v-else left size="16">mdi-account</v-icon>
@@ -192,7 +192,7 @@
   }
 
   // Observar cambios en tournamentId
-  watch(() => props.tournamentId, (newId) => {
+  watch(() => props.tournamentId, newId => {
     if (newId) {
       loadTeamEntries()
     }

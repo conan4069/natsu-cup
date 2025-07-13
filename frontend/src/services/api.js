@@ -25,8 +25,8 @@ export const tournamentAPI = {
   // Vista previa de knockout
   getKnockoutPreview: tournamentId => api.get(`/tournaments/${tournamentId}/knockout-preview/`),
 
-  // Completar etapa de knockout
-  completeKnockoutStage: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/complete-knockout-stage/`, data),
+  // Etapa de knockout unificada
+  knockoutStage: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/knockout-stage/`, data),
 
   // Obtener partidos de un torneo
   getTournamentMatches: tournamentId => api.get(`/tournaments/${tournamentId}/matches/`),
@@ -37,38 +37,23 @@ export const tournamentAPI = {
   // Generar playoffs
   generatePlayoffs: tournamentId => api.post(`/tournaments/${tournamentId}/generate-playoffs/`),
 
-  // Obtener clasificación del torneo
-  getTournamentStandings: tournamentId => api.get(`/tournaments/${tournamentId}/standings/`),
-
-  // Actualizar clasificación
-  updateTournamentStandings: tournamentId => api.post(`/tournaments/${tournamentId}/update-standings/`),
-
-  // Obtener clasificaciones de grupos
-  getGroupStandings: tournamentId => api.get(`/tournaments/${tournamentId}/group-standings/`),
-
-  // Generar fase eliminatoria
-  generateKnockoutStage: tournamentId => api.post(`/tournaments/${tournamentId}/generate-knockout/`),
+  // Clasificaciones unificadas
+  getStandings: (tournamentId, type = 'tournament') => api.get(`/tournaments/${tournamentId}/standings/?type=${type}`),
 
   // Obtener equipos clasificados
   getQualifiedTeams: tournamentId => api.get(`/tournaments/${tournamentId}/qualified-teams/`),
 }
 
-// Funciones de API para partidos
+// Funciones de API para partidos (unificadas)
 export const matchAPI = {
   // Obtener partido específico
   getMatch: matchId => api.get(`/matches/${matchId}/`),
 
-  // Actualizar resultado del partido
-  updateMatchResult: (matchId, data) => api.put(`/matches/${matchId}/`, data),
+  // Actualizar resultado del partido (usando PATCH)
+  saveMatchResult: (matchId, result) => api.patch(`/matches/${matchId}/`, result),
 
   // Obtener partidos de un torneo
   getTournamentMatches: tournamentId => api.get(`/tournaments/${tournamentId}/matches/`),
-
-  // Marcar partido como jugado
-  markMatchAsPlayed: (matchId, data) => api.patch(`/matches/${matchId}/`, data),
-
-  // Guardar resultado de partido
-  saveMatchResult: (matchId, result) => api.post(`/matches/${matchId}/save-result/`, result),
 }
 
 // Funciones de API para jugadores

@@ -337,7 +337,7 @@
   // Cargar clasificación
   const loadStandings = async tournamentId => {
     try {
-      const standingsResponse = await tournamentAPI.getTournamentStandings(tournamentId)
+      const standingsResponse = await tournamentAPI.getStandings(tournamentId, 'tournament')
       standings.value = standingsResponse.data
       console.log('Clasificación cargada:', standings.value)
     } catch (error_) {
