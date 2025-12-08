@@ -170,18 +170,50 @@
                 <!-- Lista de partidos -->
                 <v-list>
                   <v-list-item
-                    v-for="match in leagueMatches"
-                    :key="match.id"
+                    v-for="(match, index) in leagueMatches"
+                    :key="`participants-${match.id}-${index}`"
                     :subtitle="`Jornada ${match.round || 'N/A'} • ${match.played ? 'Completado' : 'Pendiente'}`"
-                    :title="`${match.team1?.name || 'TBD'} vs ${match.team2?.name || 'TBD'}`"
                   >
                     <template #prepend>
                       <v-icon color="primary">mdi-soccer</v-icon>
                     </template>
+                    <template #title>
+                      <div>
+                        <div class="text-body-1 font-weight-medium">
+                          {{ getMatchTitle(match) }}
+                        </div>
+                        <div class="d-flex align-center mt-1 flex-wrap">
+                          <div
+                            v-for="participant in match.participants"
+                            :key="participant.id"
+                            class="d-flex align-center mr-3"
+                          >
+                            <span class="text-caption text-grey-darken-1 mr-1">
+                              {{ participant.assigned_team?.name || 'Sin equipo' }}:
+                            </span>
+                            <template v-if="participant.players && participant.players.length > 0">
+                              <v-chip
+                                v-for="player in participant.players"
+                                :key="player.id"
+                                class="ma-1"
+                                color="primary"
+                                size="x-small"
+                                variant="outlined"
+                              >
+                                {{ player.name }}
+                              </v-chip>
+                            </template>
+                            <span v-else class="text-caption text-grey">
+                              Sin jugadores
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
                     <template #append>
                       <div class="d-flex align-center">
                         <span v-if="match.played" class="text-body-2 font-weight-bold mr-2">
-                          {{ match.team1_score }} - {{ match.team2_score }}
+                          {{ getMatchScore(match) }}
                         </span>
                         <v-btn
                           v-if="!match.played"
@@ -194,11 +226,11 @@
                         </v-btn>
                         <v-chip
                           v-else
-                          :color="match.winner ? 'success' : 'grey'"
+                          color="success"
                           size="small"
                           variant="outlined"
                         >
-                          {{ match.winner ? 'Completado' : 'En progreso' }}
+                          Completado
                         </v-chip>
                       </div>
                     </template>
@@ -269,7 +301,20 @@
 
   // Computed
   const leagueMatches = computed(() => {
-    return matches.value.filter(match => match.stage === 'league')
+    const leagueMatchesList = matches.value.filter(match => match.stage === 'league')
+
+    // Ordenar: primero los no jugados, luego los jugados, y dentro de cada grupo por round
+    return leagueMatchesList.toSorted((a, b) => {
+      // Primero ordenar por si está jugado (false primero, true después)
+      if (a.played !== b.played) {
+        return a.played ? 1 : -1
+      }
+
+      // Si ambos tienen el mismo estado de jugado, ordenar por round
+      const roundA = a.round || 0
+      const roundB = b.round || 0
+      return roundA - roundB
+    })
   })
 
   const totalMatches = computed(() => {
@@ -426,6 +471,26 @@
       cancelled: 'Cancelado',
     }
     return texts[status] || 'Desconocido'
+  }
+
+  const getMatchTitle = match => {
+    if (!match?.participants || match.participants.length < 2) {
+      return 'TBD vs TBD'
+    }
+    const team1 = match.participants[0]?.assigned_team?.name || 'TBD'
+    const team2 = match.participants[1]?.assigned_team?.name || 'TBD'
+    return `${team1} vs ${team2}`
+  }
+
+  const getMatchScore = match => {
+    if (!match?.played || !match?.goals || !match?.participants || match.participants.length < 2) {
+      return '0 - 0'
+    }
+    const team1Id = match.participants[0]?.id
+    const team2Id = match.participants[1]?.id
+    const team1Score = match.goals[team1Id] || 0
+    const team2Score = match.goals[team2Id] || 0
+    return `${team1Score} - ${team2Score}`
   }
 
   // Cargar datos al montar el componente

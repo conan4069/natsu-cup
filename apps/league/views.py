@@ -1,6 +1,7 @@
 from rest_framework import generics, views
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import F, Count
 from .models import (
     Tournament, Player, GameTeam, TeamEntry, Match, TournamentStanding, GroupStanding
 )
@@ -458,16 +459,23 @@ class MatchView(APIView):
         team_stats = {}
         
         for match in matches:
-            # Usar TeamEntry en lugar de Participant
-            team_entries = match.team_entries.all()
-            if len(team_entries) != 2:
+            # Obtener participantes del partido
+            participants = list(match.participants.all())
+            if len(participants) != 2:
                 continue
-                
-            team1 = team_entries[0].assigned_team
-            team2 = team_entries[1].assigned_team
             
-            team1_goals = match.goals.get(str(team_entries[0].id), 0)
-            team2_goals = match.goals.get(str(team_entries[1].id), 0)
+            team_entry1 = participants[0]
+            team_entry2 = participants[1]
+            
+            team1 = team_entry1.assigned_team
+            team2 = team_entry2.assigned_team
+            
+            if not team1 or not team2:
+                continue
+            
+            # Obtener goles usando IDs de TeamEntry como strings
+            team1_goals = match.goals.get(str(team_entry1.id), 0)
+            team2_goals = match.goals.get(str(team_entry2.id), 0)
             
             # Actualizar estadísticas de equipo 1
             if team1 not in team_stats:
@@ -498,14 +506,24 @@ class MatchView(APIView):
                 team_stats[team2]['losses'] += 1
         
         # Actualizar o crear registros de clasificación
+        # Necesitamos obtener los TeamEntry correspondientes a cada equipo
         for team, stats in team_stats.items():
             matches_played = stats['wins'] + stats['draws'] + stats['losses']
             points = (stats['wins'] * 3) + stats['draws']
             goal_difference = stats['goals_for'] - stats['goals_against']
             
+            # Buscar el TeamEntry correspondiente a este equipo en este torneo
+            team_entry = TeamEntry.objects.filter(
+                tournament=tournament,
+                assigned_team=team
+            ).first()
+            
+            if not team_entry:
+                continue
+            
             TournamentStanding.objects.update_or_create(
                 tournament=tournament,
-                team=team,
+                team_entry=team_entry,
                 defaults={
                     'matches_played': matches_played,
                     'wins': stats['wins'],
@@ -513,7 +531,6 @@ class MatchView(APIView):
                     'losses': stats['losses'],
                     'goals_for': stats['goals_for'],
                     'goals_against': stats['goals_against'],
-                    'goal_difference': goal_difference,
                     'points': points
                 }
             )
@@ -617,24 +634,29 @@ class CompleteKnockoutStageView(APIView):
         # Obtener ganadores
         winners = []
         for match in previous_matches:
-            # Usar TeamEntry en lugar de Participant
-            team_entries = match.team_entries.all()
-            if len(team_entries) != 2:
+            # Obtener participantes del partido
+            participants = list(match.participants.all())
+            if len(participants) != 2:
                 continue
-                
-            team1 = team_entries[0].assigned_team
-            team2 = team_entries[1].assigned_team
+            
+            team_entry1 = participants[0]
+            team_entry2 = participants[1]
+            
+            team1 = team_entry1.assigned_team
+            team2 = team_entry2.assigned_team
             
             goals = match.goals or {}
             
             if team1 and team2:
-                team1_goals = goals.get(str(team_entries[0].id), 0)
-                team2_goals = goals.get(str(team_entries[1].id), 0)
+                team1_goals = goals.get(str(team_entry1.id), 0)
+                team2_goals = goals.get(str(team_entry2.id), 0)
                 
                 if team1_goals > team2_goals:
-                    winners.append(team1)
+                    # El ganador es el TeamEntry 1
+                    winners.append(team_entry1)
                 elif team2_goals > team1_goals:
-                    winners.append(team2)
+                    # El ganador es el TeamEntry 2
+                    winners.append(team_entry2)
         
         if len(winners) < 2:
             return Response({'error': 'Not enough winners to generate next stage'}, status=400)
@@ -646,12 +668,12 @@ class CompleteKnockoutStageView(APIView):
         ).order_by('id')
         
         if existing_matches.exists():
-            # Actualizar partidos existentes con los ganadores
+            # Actualizar partidos existentes con los ganadores (TeamEntry)
             for i, match in enumerate(existing_matches):
                 if i * 2 < len(winners):
-                    match.team_entries.set([winners[i * 2]])
+                    match.participants.set([winners[i * 2]])
                 if i * 2 + 1 < len(winners):
-                    match.team_entries.add(winners[i * 2 + 1])
+                    match.participants.add(winners[i * 2 + 1])
                 match.save()
         else:
             # Generar nuevos partidos
@@ -673,46 +695,209 @@ class GenerateLeagueMatchesView(APIView):
             return Response({'error': 'Tournament not found'}, status=404)
         
         try:
-            # Obtener equipos del torneo
-            entries = TeamEntry.objects.filter(tournament=tournament)
-            teams = [entry.assigned_team for entry in entries if entry.assigned_team]
+            # Obtener entries del torneo que tengan equipo asignado
+            entries = list(TeamEntry.objects.filter(
+                tournament=tournament,
+                assigned_team__isnull=False
+            ))
             
-            if len(teams) < 2:
-                return Response({'error': 'Se necesitan al menos 2 equipos para generar partidos'}, status=400)
+            if len(entries) < 2:
+                return Response({'error': 'Se necesitan al menos 2 equipos asignados para generar partidos'}, status=400)
             
-            # Generar todos los partidos posibles (todos contra todos)
+            # Información sobre número de equipos
+            num_teams = len(entries)
+            is_odd = num_teams % 2 == 1
+            if is_odd:
+                # Con número impar, un equipo descansa en cada jornada
+                matches_per_round = (num_teams - 1) // 2
+                total_rounds_ida = num_teams
+            else:
+                matches_per_round = num_teams // 2
+                total_rounds_ida = num_teams - 1
+            
+            # Verificar partidos existentes para evitar duplicados
+            existing_matches = Match.objects.filter(
+                tournament=tournament,
+                stage='league'
+            ).prefetch_related('participants')
+            
+            existing_pairs = set()
+            for match in existing_matches:
+                participants = list(match.participants.all())
+                if len(participants) == 2:
+                    pair = tuple(sorted([p.id for p in participants]))
+                    existing_pairs.add(pair)
+            
+            # Obtener número de vueltas
+            league_rounds = tournament.league_rounds or 1
+            
+            # Generar todos los emparejamientos posibles (solo ida)
+            all_pairs_ida = []
+            for i in range(len(entries)):
+                for j in range(i + 1, len(entries)):
+                    entry1 = entries[i]
+                    entry2 = entries[j]
+                    pair = tuple(sorted([entry1.id, entry2.id]))
+                    
+                    # Verificar si ya existe el partido
+                    if pair not in existing_pairs:
+                        all_pairs_ida.append((entry1, entry2))
+            
+            # Distribuir partidos de ida en rounds usando algoritmo round-robin
+            matches_by_round_ida = self.distribute_matches_in_rounds(entries, all_pairs_ida)
+            
+            # Crear partidos de ida
             matches_created = []
-            for i, team1 in enumerate(teams):
-                for j, team2 in enumerate(teams):
-                    if i < j:  # Evitar partidos duplicados y contra sí mismo
+            current_round = 1
+            
+            # Primera vuelta (ida)
+            for round_num, round_pairs in sorted(matches_by_round_ida.items()):
+                for entry1, entry2 in round_pairs:
+                    match = Match.objects.create(
+                        tournament=tournament,
+                        stage='league',
+                        round=current_round,
+                        played=False,
+                        goals={}
+                    )
+                    match.participants.add(entry1, entry2)
+                    matches_created.append(match)
+                current_round += 1
+            
+            # Segunda vuelta (vuelta) si league_rounds = 2
+            if league_rounds == 2:
+                # Generar partidos de vuelta (invertir el orden de los participantes)
+                for round_num, round_pairs in sorted(matches_by_round_ida.items()):
+                    for entry1, entry2 in round_pairs:
+                        # Invertir el orden para la vuelta
                         match = Match.objects.create(
                             tournament=tournament,
                             stage='league',
+                            round=current_round,
                             played=False,
                             goals={}
                         )
-                        
-                        # Crear participantes
-                        team1_entry = TeamEntry.objects.create(
-                            match=match,
-                            assigned_team=team1,
-                            position=0
-                        )
-                        team2_entry = TeamEntry.objects.create(
-                            match=match,
-                            assigned_team=team2,
-                            position=1
-                        )
-                        
+                        # Invertir participantes: entry2, entry1
+                        match.participants.add(entry2, entry1)
                         matches_created.append(match)
+                    current_round += 1
+            
+            total_rounds = current_round - 1
+            
+            # Crear registros iniciales de clasificación con valores en 0 para todos los equipos
+            standings_created = 0
+            for entry in entries:
+                standing, created = TournamentStanding.objects.get_or_create(
+                    tournament=tournament,
+                    team_entry=entry,
+                    defaults={
+                        'matches_played': 0,
+                        'wins': 0,
+                        'draws': 0,
+                        'losses': 0,
+                        'goals_for': 0,
+                        'goals_against': 0,
+                        'points': 0
+                    }
+                )
+                if created:
+                    standings_created += 1
+            
+            # Mensaje informativo
+            message = f'Se generaron {len(matches_created)} partidos de liga en {total_rounds} jornadas ({league_rounds} vuelta{"s" if league_rounds > 1 else ""})'
+            if is_odd:
+                message += f'. Nota: Con {num_teams} equipos (impar), un equipo descansa en cada jornada de la primera vuelta.'
+            if standings_created > 0:
+                message += f' Se crearon {standings_created} registros de clasificación inicial.'
             
             return Response({
-                'message': f'Se generaron {len(matches_created)} partidos de liga',
-                'matches_count': len(matches_created)
+                'message': message,
+                'matches_count': len(matches_created),
+                'rounds': total_rounds,
+                'league_rounds': league_rounds,
+                'teams_count': num_teams,
+                'is_odd': is_odd,
+                'matches_per_round_ida': matches_per_round if not is_odd else matches_per_round,
+                'total_rounds_ida': total_rounds_ida,
+                'standings_created': standings_created
             })
             
         except Exception as e:
             return Response({'error': str(e)}, status=500)
+    
+    def distribute_matches_in_rounds(self, entries, all_pairs):
+        """
+        Distribuye los partidos en rounds usando algoritmo round-robin estándar.
+        Asegura que cada equipo juegue solo un partido por round.
+        Para n equipos (par), se necesitan n-1 rounds con n/2 partidos cada uno.
+        Para n equipos (impar), se necesitan n rounds con (n-1)/2 partidos cada uno.
+        """
+        from collections import defaultdict
+        
+        num_teams = len(entries)
+        if num_teams < 2:
+            return {}
+        
+        # Crear un diccionario para mapear IDs a entries
+        entries_dict = {entry.id: entry for entry in entries}
+        
+        # Crear un diccionario de pairs para acceso rápido
+        pairs_dict = {}
+        for entry1, entry2 in all_pairs:
+            pair_key = (min(entry1.id, entry2.id), max(entry1.id, entry2.id))
+            pairs_dict[pair_key] = (entry1, entry2)
+        
+        # Algoritmo round-robin estándar con rotación circular
+        matches_by_round = defaultdict(list)
+        
+        # Si el número de equipos es impar, necesitamos n rounds
+        # Si es par, necesitamos n-1 rounds
+        is_odd = num_teams % 2 == 1
+        num_rounds = num_teams if is_odd else num_teams - 1
+        
+        # Crear lista de IDs de equipos
+        team_ids = [entry.id for entry in entries]
+        
+        # Si es impar, agregar un "equipo fantasma" (None) para facilitar el algoritmo
+        if is_odd:
+            team_ids.append(None)
+        
+        # Algoritmo de rotación circular
+        for round_num in range(1, num_rounds + 1):
+            round_matches = []
+            
+            # Emparejar equipos: el primero con el último, segundo con penúltimo, etc.
+            for i in range(len(team_ids) // 2):
+                team1_id = team_ids[i]
+                team2_id = team_ids[-(i + 1)]
+                
+                # Saltar si alguno es el equipo fantasma (None)
+                if team1_id is None or team2_id is None:
+                    continue
+                
+                # Crear el pair key y buscar en el diccionario
+                pair_key = (min(team1_id, team2_id), max(team1_id, team2_id))
+                if pair_key in pairs_dict:
+                    entry1, entry2 = pairs_dict[pair_key]
+                    round_matches.append((entry1, entry2))
+            
+            if round_matches:
+                matches_by_round[round_num] = round_matches
+            
+            # Rotar la lista: mantener el primer equipo fijo, rotar los demás en sentido horario
+            # [A, B, C, D, E, F] -> [A, F, B, C, D, E]
+            # Para impares con equipo fantasma: [A, B, C, None] -> [A, None, B, C]
+            if round_num < num_rounds:
+                # Mantener el primer equipo fijo
+                first = team_ids[0]
+                # Rotar el resto: último va al segundo lugar, resto se desplaza
+                rest = team_ids[1:]
+                if rest:
+                    # Rotar circularmente: último elemento va al principio del resto
+                    rotated_rest = [rest[-1]] + rest[:-1]
+                    team_ids = [first] + rotated_rest
+        
+        return matches_by_round
 
 class GeneratePlayoffsView(APIView):
     def post(self, request, tournament_id):
@@ -722,48 +907,73 @@ class GeneratePlayoffsView(APIView):
             return Response({'error': 'Tournament not found'}, status=404)
         
         try:
-            # Obtener clasificación de la liga
-            standings = TournamentStanding.objects.filter(tournament=tournament).order_by('-points', '-goal_difference', '-goals_for')
+            # Obtener clasificación de la liga con anotación para goal_difference
+            from django.db.models import F
+            standings = TournamentStanding.objects.filter(
+                tournament=tournament
+            ).annotate(
+                goal_difference_calc=F('goals_for') - F('goals_against')
+            ).order_by('-points', '-goal_difference_calc', '-goals_for')
             
             # Tomar los mejores equipos según playoff_teams
             playoff_count = tournament.playoff_teams or 4
-            qualified_teams = list(standings[:playoff_count])
+            qualified_standings = list(standings[:playoff_count])
             
-            if len(qualified_teams) < 2:
+            if len(qualified_standings) < 2:
                 return Response({'error': 'Se necesitan al menos 2 equipos clasificados para generar playoffs'}, status=400)
+            
+            # Obtener los TeamEntry de los equipos clasificados
+            qualified_entries = [standing.team_entry for standing in qualified_standings]
+            
+            # Verificar partidos existentes para evitar duplicados
+            existing_matches = Match.objects.filter(
+                tournament=tournament,
+                stage__in=['semifinal', 'final', 'quarterfinal', 'round_of_16']
+            ).prefetch_related('participants')
+            
+            existing_pairs = set()
+            for match in existing_matches:
+                participants = list(match.participants.all())
+                if len(participants) == 2:
+                    pair = tuple(sorted([p.id for p in participants]))
+                    existing_pairs.add(pair)
+            
+            # Determinar la etapa según la cantidad de equipos
+            if len(qualified_entries) == 2:
+                stage = 'final'
+            elif len(qualified_entries) == 4:
+                stage = 'semifinal'
+            elif len(qualified_entries) == 8:
+                stage = 'quarterfinal'
+            elif len(qualified_entries) == 16:
+                stage = 'round_of_16'
+            else:
+                stage = 'semifinal'  # Por defecto
             
             # Generar partidos de playoffs
             matches_created = []
-            for i in range(0, len(qualified_teams), 2):
-                if i + 1 < len(qualified_teams):
-                    team1 = qualified_teams[i].team
-                    team2 = qualified_teams[i + 1].team
+            for i in range(0, len(qualified_entries), 2):
+                if i + 1 < len(qualified_entries):
+                    entry1 = qualified_entries[i]
+                    entry2 = qualified_entries[i + 1]
+                    pair = tuple(sorted([entry1.id, entry2.id]))
                     
-                    match = Match.objects.create(
-                        tournament=tournament,
-                        stage='playoff',
-                        played=False,
-                        goals={}
-                    )
-                    
-                    # Crear participantes
-                    team1_entry = TeamEntry.objects.create(
-                        match=match,
-                        assigned_team=team1,
-                        position=0
-                    )
-                    team2_entry = TeamEntry.objects.create(
-                        match=match,
-                        assigned_team=team2,
-                        position=1
-                    )
-                    
-                    matches_created.append(match)
+                    # Verificar si ya existe el partido
+                    if pair not in existing_pairs:
+                        match = Match.objects.create(
+                            tournament=tournament,
+                            stage=stage,
+                            played=False,
+                            goals={}
+                        )
+                        match.participants.add(entry1, entry2)
+                        matches_created.append(match)
             
             return Response({
                 'message': f'Se generaron {len(matches_created)} partidos de playoffs',
                 'matches_count': len(matches_created),
-                'qualified_teams': len(qualified_teams)
+                'qualified_teams': len(qualified_entries),
+                'stage': stage
             })
             
         except Exception as e:
@@ -982,15 +1192,23 @@ class StandingsView(APIView):
     
     def get_tournament_standings(self, tournament, request):
         """Obtener clasificación del torneo"""
-        standings = TournamentStanding.objects.filter(tournament=tournament).order_by('-points', '-goal_difference', '-goals_for')
+        standings = TournamentStanding.objects.filter(
+            tournament=tournament
+        ).select_related('team_entry__assigned_team').annotate(
+            goal_difference_calc=F('goals_for') - F('goals_against')
+        ).order_by('-points', '-goal_difference_calc', '-goals_for')
         
-        # Serializar datos
+        # Serializar datos en el formato esperado por el frontend
         standings_data = []
-        for standing in standings:
+        for idx, standing in enumerate(standings):
+            team = standing.team_entry.assigned_team if standing.team_entry.assigned_team else None
             standings_data.append({
-                'id': standing.team.id,
-                'name': standing.team.name,
-                'logo': standing.team.logo.url if standing.team.logo else None,
+                'id': team.id if team else standing.team_entry.id,
+                'assigned_team': {
+                    'id': team.id if team else None,
+                    'name': team.name if team else f'Entry {standing.team_entry.id}',
+                    'logo': request.build_absolute_uri(team.logo.url) if team and team.logo else None,
+                } if team else None,
                 'matches_played': standing.matches_played,
                 'wins': standing.wins,
                 'draws': standing.draws,
@@ -999,16 +1217,18 @@ class StandingsView(APIView):
                 'goals_against': standing.goals_against,
                 'goal_difference': standing.goal_difference,
                 'points': standing.points,
-                'position': standings_data.index(standing) + 1
+                'position': idx + 1
             })
         
         return Response(standings_data)
     
     def get_group_standings(self, tournament, request):
         """Obtener clasificaciones de grupos"""
-        group_standings = GroupStanding.objects.filter(tournament=tournament).order_by(
-            'group_code', '-points', '-goal_difference', '-goals_for'
-        )
+        group_standings = GroupStanding.objects.filter(
+            tournament=tournament
+        ).select_related('team_entry__assigned_team').annotate(
+            goal_difference_calc=F('goals_for') - F('goals_against')
+        ).order_by('group_code', '-points', '-goal_difference_calc', '-goals_for')
         
         # Agrupar por código de grupo
         standings_by_group = {}
@@ -1017,10 +1237,11 @@ class StandingsView(APIView):
             if group_code not in standings_by_group:
                 standings_by_group[group_code] = []
             
+            team = standing.team_entry.assigned_team if standing.team_entry.assigned_team else None
             standing_data = {
-                'id': standing.team.id,
-                'name': standing.team.name,
-                'logo_url': request.build_absolute_uri(standing.team.logo.url) if standing.team.logo else None,
+                'id': team.id if team else standing.team_entry.id,
+                'name': team.name if team else f'Entry {standing.team_entry.id}',
+                'logo_url': request.build_absolute_uri(team.logo.url) if team and team.logo else None,
                 'group_code': standing.group_code,
                 'matches_played': standing.matches_played,
                 'wins': standing.wins,
@@ -1044,24 +1265,36 @@ class TournamentMatchesView(APIView):
             return Response({'error': 'Tournament not found'}, status=404)
         
         try:
-            # Obtener todos los partidos del torneo
-            matches = Match.objects.filter(tournament=tournament).prefetch_related(
+            # Obtener todos los partidos del torneo con al menos 2 participantes
+            # Ordenar por round (ascendente) y luego por id
+            matches = Match.objects.filter(
+                tournament=tournament
+            ).prefetch_related(
                 'participants__assigned_team',
                 'participants__players'
-            )
+            ).annotate(
+                participant_count=Count('participants')
+            ).filter(
+                participant_count__gte=2
+            ).order_by('round', 'id')
             
             # Serializar partidos
             matches_data = []
             for match in matches:
+                participants = list(match.participants.all())
+                
+                # Verificar que tenga exactamente 2 participantes
+                if len(participants) != 2:
+                    continue
+                
                 participants_data = []
-                for participant in match.participants.all():
+                for idx, participant in enumerate(participants):
                     participant_data = {
                         'id': participant.id,
-                        'position': participant.position,
                         'assigned_team': {
                             'id': participant.assigned_team.id,
                             'name': participant.assigned_team.name,
-                            'logo_url': request.build_absolute_uri(participant.assigned_team.logo.url) if participant.assigned_team.logo else None
+                            'logo_url': request.build_absolute_uri(participant.assigned_team.logo.url) if participant.assigned_team and participant.assigned_team.logo else None
                         } if participant.assigned_team else None,
                         'players': [
                             {
@@ -1077,6 +1310,7 @@ class TournamentMatchesView(APIView):
                 match_data = {
                     'id': match.id,
                     'stage': match.stage,
+                    'round': match.round,
                     'played': match.played,
                     'goals': match.goals,
                     'participants': participants_data,

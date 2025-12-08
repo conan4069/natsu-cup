@@ -70,7 +70,7 @@
             <div v-else>
               <div
                 v-for="(team, index) in standings.slice(0, 5)"
-                :key="team.team_entry.id"
+                :key="team.id"
                 class="mb-2"
               >
                 <div class="d-flex align-center justify-space-between">
@@ -80,7 +80,7 @@
                     </div>
                     <div>
                       <div class="text-body-2 font-weight-medium">
-                        {{ team.team_entry.assigned_team?.name || `Equipo ${team.team_entry.id}` }}
+                        {{ team.assigned_team?.name || `Equipo ${team.id}` }}
                       </div>
                       <div class="text-caption text-grey-darken-1">
                         {{ team.points }} pts • {{ team.matches_played }} PJ
@@ -136,11 +136,22 @@
               >
                 <div class="d-flex align-center justify-space-between">
                   <div class="flex-grow-1">
-                    <div class="text-body-2 font-weight-medium">
-                      {{ match.team1?.name || 'Por definir' }} vs {{ match.team2?.name || 'Por definir' }}
+                    <div class="d-flex align-center mb-1">
+                      <div class="text-body-2 font-weight-medium">
+                        {{ getTeamName(match, 0) }} vs {{ getTeamName(match, 1) }}
+                      </div>
+                      <v-chip
+                        v-if="match.round"
+                        class="ml-2"
+                        color="primary"
+                        size="x-small"
+                        variant="outlined"
+                      >
+                        Jornada {{ match.round }}
+                      </v-chip>
                     </div>
                     <div class="text-caption text-grey-darken-1">
-                      Jornada {{ match.round || 'N/A' }}
+                      Partido pendiente
                     </div>
                   </div>
                   <v-chip
@@ -188,6 +199,8 @@
               <v-btn
                 v-if="leagueStatus === 'not_started'"
                 color="success"
+                :disabled="generating"
+                :loading="generating"
                 prepend-icon="mdi-play"
                 rounded="xl"
                 variant="elevated"
@@ -198,6 +211,8 @@
               <v-btn
                 v-if="tournament.competition_type === 'hybrid' && leagueStatus === 'completed'"
                 color="warning"
+                :disabled="generating"
+                :loading="generating"
                 prepend-icon="mdi-trophy"
                 rounded="xl"
                 variant="elevated"
@@ -215,7 +230,8 @@
 
 <script setup>
   import { computed, onMounted, ref } from 'vue'
-  import { tournamentAPI } from '@/services/api'
+  import { handleApiError, tournamentAPI } from '@/services/api'
+  import { useAppStore } from '@/stores/app'
 
   // Props
   const props = defineProps({
@@ -228,10 +244,14 @@
   // Emits
   const emit = defineEmits(['go-to-league'])
 
+  // Store
+  const appStore = useAppStore()
+
   // Estado reactivo
   const matches = ref([])
   const standings = ref([])
   const loading = ref(true)
+  const generating = ref(false)
 
   // Computed properties
   const leagueStatus = computed(() => {
@@ -260,7 +280,7 @@
   })
 
   // Métodos
-  const loadData = async () => {
+  async function loadData () {
     loading.value = true
     try {
       // Cargar partidos
@@ -279,7 +299,7 @@
     }
   }
 
-  const getLeagueStatusColor = status => {
+  function getLeagueStatusColor (status) {
     const colorMap = {
       not_started: 'grey',
       in_progress: 'warning',
@@ -288,7 +308,7 @@
     return colorMap[status] || 'grey'
   }
 
-  const getLeagueStatusText = status => {
+  function getLeagueStatusText (status) {
     const textMap = {
       not_started: 'No iniciada',
       in_progress: 'En progreso',
@@ -297,7 +317,7 @@
     return textMap[status] || 'Desconocido'
   }
 
-  const getPositionColor = position => {
+  function getPositionColor (position) {
     const colorMap = {
       1: 'gold',
       2: 'grey',
@@ -306,7 +326,7 @@
     return colorMap[position] || 'primary'
   }
 
-  const getPositionText = position => {
+  function getPositionText (position) {
     const textMap = {
       1: '1º',
       2: '2º',
@@ -315,18 +335,68 @@
     return textMap[position] || `${position}º`
   }
 
-  const goToLeague = () => {
+  function goToLeague () {
     emit('go-to-league')
   }
 
-  const startLeague = () => {
-    // TODO: Implementar generación de partidos de liga
-    console.log('Generar partidos de liga')
+  function getTeamName (match, index) {
+    if (!match?.participants || !Array.isArray(match.participants)) {
+      return 'Por definir'
+    }
+    const participant = match.participants[index]
+    if (!participant) return 'Por definir'
+    return participant.assigned_team?.name || `Equipo ${participant.id}` || 'Por definir'
   }
 
-  const generatePlayoffs = () => {
-    // TODO: Implementar generación de playoffs
-    console.log('Generar playoffs')
+  async function startLeague () {
+    generating.value = true
+    try {
+      const response = await tournamentAPI.generateLeagueMatches(props.tournament.id)
+      const matchesCount = response.data?.matches_count || 0
+
+      appStore.showSuccess(
+        matchesCount > 0
+          ? `Se generaron ${matchesCount} partidos de liga exitosamente`
+          : response.data?.message || 'Partidos de liga generados exitosamente',
+      )
+
+      // Recargar datos para mostrar los nuevos partidos
+      await loadData()
+    } catch (error) {
+      const errorInfo = handleApiError(error)
+      appStore.showError(
+        errorInfo.message || 'Error al generar los partidos de liga',
+      )
+      console.error('Error al generar partidos de liga:', errorInfo)
+    } finally {
+      generating.value = false
+    }
+  }
+
+  async function generatePlayoffs () {
+    generating.value = true
+    try {
+      const response = await tournamentAPI.generatePlayoffs(props.tournament.id)
+      const matchesCount = response.data?.matches_count || 0
+      const stage = response.data?.stage || 'playoffs'
+
+      appStore.showSuccess(
+        matchesCount > 0
+          ? `Se generaron ${matchesCount} partidos de ${stage} exitosamente`
+          : response.data?.message || 'Partidos de playoffs generados exitosamente',
+      )
+
+      // Recargar datos para mostrar los nuevos partidos
+      await loadData()
+    } catch (error) {
+      const errorInfo = handleApiError(error)
+      appStore.showError(
+        errorInfo.message || 'Error al generar los partidos de playoffs',
+      )
+      console.error('Error al generar playoffs:', errorInfo)
+    } finally {
+      generating.value = false
+    }
   }
 
   // Cargar datos al montar

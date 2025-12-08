@@ -4,6 +4,15 @@
       <v-card-title class="text-h6">
         <v-icon start>mdi-soccer</v-icon>
         Resultado del Partido
+        <v-chip
+          v-if="match?.round"
+          class="ml-2"
+          color="primary"
+          size="small"
+          variant="outlined"
+        >
+          Jornada {{ match.round }}
+        </v-chip>
       </v-card-title>
 
       <v-card-text>
@@ -13,14 +22,14 @@
             <div class="team-display">
               <v-avatar class="mr-3" size="48">
                 <v-img
-                  v-if="getTeam(0)?.assigned_team?.logo && getTeam(0).assigned_team.logo !== 'null'"
+                  v-if="getTeam(0)?.assigned_team?.logo_url"
                   alt="Logo equipo 1"
-                  :src="getTeam(0).assigned_team.logo"
+                  :src="getTeam(0).assigned_team.logo_url"
                 />
                 <v-icon v-else size="24">mdi-shield</v-icon>
               </v-avatar>
               <span class="text-h6 font-weight-bold">
-                {{ getTeam(0)?.assigned_team?.name || getTeam(0)?.team_name || 'Equipo 1' }}
+                {{ getTeam(0)?.assigned_team?.name || 'Equipo 1' }}
               </span>
               <div class="mt-2">
                 <v-chip
@@ -32,11 +41,11 @@
                   size="small"
                   variant="outlined"
                 >
-                  <v-avatar v-if="player.avatar && player.avatar !== 'null'" left size="20">
-                    <v-img :src="player.avatar" />
+                  <v-avatar v-if="player.avatar_url" left size="20">
+                    <v-img :src="player.avatar_url" />
                   </v-avatar>
                   <v-icon v-else left size="20">mdi-account</v-icon>
-                  {{ player.display_name }}
+                  {{ player.name }}
                 </v-chip>
               </div>
             </div>
@@ -46,13 +55,13 @@
             <!-- Equipo 2 -->
             <div class="team-display">
               <span class="text-h6 font-weight-bold">
-                {{ getTeam(1)?.assigned_team?.name || getTeam(1)?.team_name || 'Equipo 2' }}
+                {{ getTeam(1)?.assigned_team?.name || 'Equipo 2' }}
               </span>
               <v-avatar class="ml-3" size="48">
                 <v-img
-                  v-if="getTeam(1)?.assigned_team?.logo && getTeam(1).assigned_team.logo !== 'null'"
+                  v-if="getTeam(1)?.assigned_team?.logo_url"
                   alt="Logo equipo 2"
-                  :src="getTeam(1).assigned_team.logo"
+                  :src="getTeam(1).assigned_team.logo_url"
                 />
                 <v-icon v-else size="24">mdi-shield</v-icon>
               </v-avatar>
@@ -66,11 +75,11 @@
                   size="small"
                   variant="outlined"
                 >
-                  <v-avatar v-if="player.avatar && player.avatar !== 'null'" left size="20">
-                    <v-img :src="player.avatar" />
+                  <v-avatar v-if="player.avatar_url" left size="20">
+                    <v-img :src="player.avatar_url" />
                   </v-avatar>
                   <v-icon v-else left size="20">mdi-account</v-icon>
-                  {{ player.display_name }}
+                  {{ player.name }}
                 </v-chip>
               </div>
             </div>
@@ -82,7 +91,7 @@
             <div class="d-flex align-center justify-space-between">
               <div class="team-score-input">
                 <label class="text-subtitle-2 mb-2 d-block">
-                  {{ getTeam(0)?.assigned_team?.name || getTeam(0)?.team_name || 'Equipo 1' }}
+                  {{ getTeam(0)?.assigned_team?.name || 'Equipo 1' }}
                 </label>
                 <v-text-field
                   v-model.number="team1Score"
@@ -103,7 +112,7 @@
 
               <div class="team-score-input">
                 <label class="text-subtitle-2 mb-2 d-block">
-                  {{ getTeam(1)?.assigned_team?.name || getTeam(1)?.team_name || 'Equipo 2' }}
+                  {{ getTeam(1)?.assigned_team?.name || 'Equipo 2' }}
                 </label>
                 <v-text-field
                   v-model.number="team2Score"
@@ -209,22 +218,22 @@
       && team2Score.value !== null
       && team1Score.value >= 0
       && team2Score.value >= 0
-      && (team1Score.value > 0 || team2Score.value > 0)
+      && (team1Score.value >= 0 || team2Score.value >= 0)
   })
 
   const isDraw = computed(() => {
     return team1Score.value === team2Score.value
-      && team1Score.value > 0
-      && team2Score.value > 0
+      && team1Score.value >= 0
+      && team2Score.value >= 0
   })
 
   const winner = computed(() => {
     if (!isValid.value) return null
 
     if (team1Score.value > team2Score.value) {
-      return getTeam(0)?.assigned_team?.name || getTeam(0)?.team_name || 'Equipo 1'
+      return getTeam(0)?.assigned_team?.name || 'Equipo 1'
     } else if (team2Score.value > team1Score.value) {
-      return getTeam(1)?.assigned_team?.name || getTeam(1)?.team_name || 'Equipo 2'
+      return getTeam(1)?.assigned_team?.name || 'Equipo 2'
     }
 
     return null
@@ -255,21 +264,21 @@
       const team1Id = participants[0]?.id
       const team2Id = participants[1]?.id
 
-      console.log('Match data:', props.match)
-      console.log('Participants:', participants)
-      console.log('Team1 ID:', team1Id)
-      console.log('Team2 ID:', team2Id)
-      console.log('Team1 Score:', team1Score.value)
-      console.log('Team2 Score:', team2Score.value)
+      if (!team1Id || !team2Id) {
+        console.error('Error: No se encontraron los IDs de los participantes')
+        return
+      }
+
+      // Formato de goals que espera el backend: { "participantId": goals }
+      // Las claves deben ser strings para compatibilidad con el backend
+      const goals = {
+        [String(team1Id)]: team1Score.value,
+        [String(team2Id)]: team2Score.value,
+      }
 
       const result = {
-        matchId: props.match.id,
-        team1Id: team1Id,
-        team2Id: team2Id,
-        team1Score: team1Score.value,
-        team2Score: team2Score.value,
-        winner: winner.value,
-        isDraw: isDraw.value,
+        goals,
+        played: true,
       }
 
       console.log('Resultado a enviar:', result)
@@ -294,8 +303,9 @@
         const team1Id = participants[0].id
         const team2Id = participants[1].id
 
-        team1Score.value = goals[team1Id] || 0
-        team2Score.value = goals[team2Id] || 0
+        // Las claves en goals son strings (IDs como strings)
+        team1Score.value = goals[String(team1Id)] || goals[team1Id] || 0
+        team2Score.value = goals[String(team2Id)] || goals[team2Id] || 0
       }
     } else {
       resetForm()
